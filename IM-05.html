@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>I Mudd</title>
+  <style>
+    /* ── RESET ── */
+    html, body {
+      margin: 0; padding: 0; height: 100%; overflow: hidden;
+      font-family: sans-serif; color: white; background: #000;
+    }
+
+    /* ══════════════════════════════════════
+       SCENE: DIALOG (IM-05 / IM-08 / IM-09 / IM-10)
+    ══════════════════════════════════════ */
+    #dialog-scene {
+      display: none;
+      position: fixed; inset: 0;
+    }
+    .scene-container {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .frame {
+      position: relative; width: 100%; height: 100%;
+      max-width: 100vw;
+      max-height: calc(100vw * 450 / 900);
+      overflow: hidden; background: #000;
+    }
+    @media (min-aspect-ratio: 900/450) {
+      .frame { max-width: calc(100vh * 900 / 450); max-height: 100vh; }
+    }
+    .frame img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; display: block;
+      user-select: none; -webkit-user-drag: none; pointer-events: none;
+    }
+    .background { z-index: 1; }
+    .character   { bottom: 200px; z-index: 2; object-fit: contain; }
+
+    #dialog-and-button-container {
+      position: fixed; bottom: 20px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; align-items: flex-end;
+      max-width: 1800px; width: 95%; z-index: 10;
+    }
+    #logbox {
+      position: static; transform: none; width: auto; max-width: none;
+      padding: 15px 10px; border-radius: 15px;
+      background: rgba(0,0,0,0.6); color: white;
+      backdrop-filter: blur(10px); border: 2px solid #666;
+      box-sizing: border-box; z-index: 10; flex-grow: 1;
+      min-height: 90px; display: flex; align-items: center; justify-content: center;
+    }
+    .dialog-text {
+      max-width: 100%; margin: 0 auto;
+      font-size: clamp(14px, 2vw, 18px); line-height: 1.4em;
+      text-align: center; white-space: pre-wrap; padding: 10px 0;
+    }
+    .buttons-container {
+      margin-left: 10px; margin-bottom: 0; flex-shrink: 0;
+    }
+    .image-btn {
+      cursor: pointer;
+      width: clamp(50px, 7vw, 70px); height: clamp(64px, 9vw, 90px);
+      border: none; background: transparent; padding: 0;
+      transform: translateY(-5px);
+    }
+    .image-btn:hover { opacity: 0.8; }
+
+    @media (max-width: 768px) {
+      #dialog-and-button-container { width: 98%; align-items: center; }
+      #logbox { padding: 15px 10px; min-height: 70px; }
+      .buttons-container { margin-left: 5px; }
+      .image-btn { transform: translateY(0); }
+    }
+
+    /* ══════════════════════════════════════
+       SCENE: HUB (IM-06)
+    ══════════════════════════════════════ */
+    #hub-scene {
+      display: none;
+      position: fixed; inset: 0;
+    }
+    .hub-container {
+      position: relative; width: 100vw; height: 100vh;
+      background-image: url('back/blank4.png');
+      background-repeat: repeat; background-size: auto;
+    }
+    .control-panel-hub {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 37.5%; height: 100%;
+      background: url('back/com-screen4.png') center/contain no-repeat;
+    }
+    .control-button-hub {
+      position: absolute;
+      width: 5.75%; height: 19.5%;
+      cursor: pointer; transition: all 0.3s ease;
+      opacity: 0.7; border-radius: 50%;
+      top: 55%; left: 48%;
+      background: transparent;
+      border: none;
+    }
+    .control-button-hub:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(0,255,255,0.6);
+      filter: brightness(1.2);
+    }
+
+    /* ══════════════════════════════════════
+       SCENE: PUZZLE (IM-07)
+    ══════════════════════════════════════ */
+    #puzzle-scene {
+      display: none;
+      position: fixed; inset: 0;
+      background: url('back/blank4.png') repeat;
+      background-size: auto;
+      justify-content: center;
+      align-items: center;
+    }
+    .puzzle-hub-container {
+      position: relative; width: 800px; height: 600px;
+      background-image: url('back/blank4.png'); background-size: cover;
+    }
+    .puzzle-control-panel {
+      position: relative; width: 800px; height: 600px;
+      background: url('back/com-screen.png') center/contain no-repeat;
+    }
+    .communicator-screen {
+      position: absolute; top: 290.6px; left: 354.6px;
+      width: 97px; height: auto; opacity: 0.7;
+      pointer-events: none; z-index: 10;
+    }
+    .puzzle-btn {
+      position: absolute; width: 33px; height: 33px;
+      background: url('back/button3.png') center/cover no-repeat;
+      cursor: pointer; transition: all 0.3s ease;
+      border-radius: 50%;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+    }
+    .puzzle-btn:hover  { transform: scale(1.1); filter: brightness(1.2); }
+    .puzzle-btn:active { transform: scale(0.95); }
+    .color-red   { background-blend-mode: multiply; background-color: rgba(255,100,100,0.7); }
+    .color-blue  { background-blend-mode: multiply; background-color: rgba(100,100,255,0.7); }
+    .color-green { background-blend-mode: multiply; background-color: rgba(100,255,100,0.7); }
+    .puzzle-btn-1 { top: 416px; left: 337px; }
+    .puzzle-btn-2 { top: 416px; left: 387px; }
+    .puzzle-btn-3 { top: 416px; left: 437px; }
+    .secret-btn {
+      top: 471px; left: 395px;
+      width: 20px; height: 20px;
+      opacity: 0; pointer-events: none;
+      background: url('back/button6.png') center/cover no-repeat;
+      box-shadow: 0 0 20px rgba(255,215,0,0.9), inset 0 0 15px rgba(255,215,0,0.4);
+      animation: pulse 2s infinite;
+    }
+    .secret-btn.unlocked { opacity: 1; pointer-events: auto; }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.05); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══ DIALOG SCENE ══ -->
+  <div id="dialog-scene">
+    <div class="scene-container">
+      <div class="frame">
+        <img id="background" class="background" alt="Background" src="back/14.jpg" />
+        <img id="character"  class="character"  alt="Character" />
+      </div>
+    </div>
+    <div id="dialog-and-button-container">
+      <div id="logbox">
+        <div class="dialog-text" id="dialogText"></div>
+      </div>
+      <div class="buttons-container">
+        <img src="TOS-Badge.webp" alt="Next" class="image-btn" id="nextBtn" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ HUB SCENE (IM-06) ══ -->
+  <div id="hub-scene">
+    <div class="hub-container">
+      <div class="control-panel-hub"></div>
+      <button class="control-button-hub" id="hubBtn" title="Enter"></button>
+    </div>
+  </div>
+
+  <!-- ══ PUZZLE SCENE (IM-07) ══ -->
+  <div id="puzzle-scene">
+    <div class="puzzle-hub-container">
+      <div class="puzzle-control-panel">
+        <img src="back/moire.gif" class="communicator-screen" alt="Moire">
+        <div class="puzzle-btn puzzle-btn-1" id="pbtn1" data-color="0"></div>
+        <div class="puzzle-btn puzzle-btn-2" id="pbtn2" data-color="0"></div>
+        <div class="puzzle-btn puzzle-btn-3" id="pbtn3" data-color="0"></div>
+        <div class="puzzle-btn secret-btn"   id="secretBtn"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+// ─────────────────────────────────────────
+// SCENE MANAGER
+// ─────────────────────────────────────────
+const scenes = {
+  dialog : document.getElementById('dialog-scene'),
+  hub    : document.getElementById('hub-scene'),
+  puzzle : document.getElementById('puzzle-scene'),
+};
+
+function showScene(name) {
+  Object.entries(scenes).forEach(([k, el]) => {
+    el.style.display = (k === name) ? (k === 'puzzle' ? 'flex' : 'block') : 'none';
+  });
+}
+
+// ─────────────────────────────────────────
+// DIALOG ENGINE
+// ─────────────────────────────────────────
+const backgroundImg = document.getElementById('background');
+const characterImg  = document.getElementById('character');
+const dialogText    = document.getElementById('dialogText');
+const nextBtn       = document.getElementById('nextBtn');
+
+// All dialog sequences in order, tagged with their source file
+// Each sequence ends with an `onEnd` callback
+let allSequences = [];
+let currentSequenceIdx = 0;
+let currentDialogIdx   = 0;
+
+function buildSequences() {
+  // ── IM-05 ──
+  allSequences.push({
+    dialogs: [
+      { speaker: "Norman", image: "i-m-156.webp", text: "Our planet's surface is what you classify as K-type. ", background: "back/galor6.jpg" },
+      { speaker: "Norman", image: "i-m-156.webp", text: "Adaptable for humans by use of pressure domes and life-support systems." },
+      { speaker: "Norman", image: "i-m-157.webp", text: "I have brought them." },
+      { speaker: "Alice",  image: "i-m-304.webp", text: "He is waiting." },
+      { speaker: "Alice",  image: "i-m-374.webp", text: "If you will follow us, please?" },
+      { speaker: "Kirk",   image: "i-m-166.webp", text: "I don't believe it.", background: "back/galor4.jpg" },
+      { speaker: "Mudd",   image: "i-m-163.webp", text: "Welcome aboard, Kirk. It's been a long time, eh?", background: "back/galor9.jpg" },
+      { speaker: "Kirk",   image: "i-m-169.webp", text: "Harry Mudd.", background: "back/galor3.jpg" },
+      { speaker: "Mudd",   image: "i-m-162.webp", text: "Well, to be absolutely accurate, laddybuck, you should refer to me as Mudd the First, ruler of this entire sovereign planet.", background: "back/galor9.jpg" },
+      { speaker: "Kirk",   image: "i-m-170.webp", text: "Ruler? Harry, I want control of my ship returned immediately. We have no intention of staying as your guests.", background: "back/galor3.jpg" },
+      { speaker: "Mudd",   image: "i-m-180.webp", text: "Well, I'm afraid there's a bit of a problem there." },
+    ],
+    onEnd: () => showScene('hub'),
+  });
+
+  // ── IM-08 ──
+  allSequences.push({
+    dialogs: [
+      { speaker: "Kirk",  image: "i-m-171.webp", text: "Kirk to Enterprise.", background: "back/galor3.jpg" },
+      { speaker: "Mudd",  image: "i-m-179.webp", text: "Alice." },
+      { speaker: "Alice", image: "i-m-173.webp", text: " ", background: "back/galor3b.jpg" },
+      { speaker: "Alice", image: "i-m-175.webp", text: " " },
+      { speaker: "Alice", image: "i-m-176.webp", text: " " },
+      { speaker: "Alice", image: "i-m-177.webp", text: " " },
+      { speaker: "Mudd",  image: "i-m-180.webp", text: "Now, now, now, now, Jamie boy, let's have no unauthorised communications.", background: "back/galor3.jpg" },
+      { speaker: "Chekov",image: "i-m-181.webp", text: "You know this man, Captain?", background: "back/galor2.jpg" },
+      { speaker: "Kirk",  image: "i-m-189.webp", text: "Oh, do I know him. Harcourt Fenton Mudd, thief", background: "back/galor3b.jpg" },
+      { speaker: "Mudd",  image: "i-m-235.webp", text: "Come now.", background: "back/galor0b.jpg" },
+      { speaker: "Kirk",  image: "i-m-189.webp", text: "Swindler and con man", background: "back/galor3b.jpg" },
+      { speaker: "Mudd",  image: "i-m-218.webp", text: "Entrepreneur.", background: "back/galor0b.jpg" },
+      { speaker: "Kirk",  image: "i-m-178.webp", text: "Liar and rogue.", background: "back/galor3b.jpg" },
+      { speaker: "Mudd",  image: "i-m-221.webp", text: "Did I leave you with that impression?", background: "back/galor0b.jpg" },
+      { speaker: "Kirk",  image: "i-m-217.webp", text: "He belongs in jail, which is where I thought I left you, Mudd.", background: "back/galor3.jpg" },
+      { speaker: "Mudd",  image: "i-m-206.webp", text: "And thereby hangs a tale, yes. But look around you, Kirk. Quite a place, isn't it? I hope you're all going to enjoy it.", background: "back/galor0.jpg" },
+      { speaker: "Kirk",  image: "i-m-223.webp", text: "Mudd, I want that trained machine of yours, Norman, to deactivate the trigger mechanism and free my ship.", background: "back/galor3.jpg"},
+      { speaker: "Mudd",  image: "i-m-211.webp", text: "I shall do that, Kirk, when I'm ready.", background: "back/galor0.jpg" },
+      { speaker: "Kirk",  image: "i-m-223.webp", text: "I'm telling you now.", background: "back/galor3.jpg" },
+      { speaker: "Mudd",  image: "i-m-233.webp", text: "And I do the telling on this planet, Kirk, old boy. You do the listening." },
+      { speaker: "Kirk",  image: "i-m-189.webp", text: "All right, I'll listen. What are you telling?", background: "back/galor3b.jpg" },
+      { speaker: "Mudd",  image: "i-m-238.webp", text: "Merely that you might as well start enjoying yourselves.", background: "back/galor0.jpg" },
+      { speaker: "Mudd",  image: "i-m-263.webp", text: "It's really a very, very nice place, and you're all going to be here quite probably for the rest of your lives." },
+      { speaker: "Mudd",  image: "i-m-193.webp", text: "HA HA.", background: "back/galor3.jpg" },
+      { speaker: "Mudd",  image: "i-m-196.webp", text: "HA HA HA!", background: "back/galor0b.jpg" },
+      { speaker: "Mudd",  image: "i-m-194.webp", text: "HA HA!", background: "back/galor4.jpg" },
+      { speaker: "Mudd",  image: "i-m-197.webp", text: "HA HA HA HA HA!!", background: "back/galor0b.jpg" },
+      { speaker: "Kirk",  image: "i-m-199.webp", text: "Harry Mudd, you're a liar and an outlaw and in deep trouble. I want navigational control restored, my ship released.", background: "back/galor2.jpg" },
+      { speaker: "Mudd",  image: "i-m-200.webp", text: "Sorry. That'd be against the law. My law. Decreed by Mudd the First. Voted in by the resident population.", background: "back/galor9.jpg" },
+      { speaker: "Mudd",  image: "i-m-198.webp", text: "Lovely, aren't they? You must admit, Kirk, that I still retain my eye for beauty. " },
+      { speaker: "Mudd",  image: "i-m-210.webp", text: "I decreed that I should always be surrounded by it, and my decrees always come to pass. ", background: "back/galor9.jpg" },
+      { speaker: "Mudd",  image: "i-m-210.webp", text: "I've had five hundred of them made up to attend me. All of them identical, beautiful, compliant, obedient." },
+      { speaker: "Spock", image: "i-m-209.webp", text: "Five hundred of the same model? That seems rather redundant.", background: "back/galor4.jpg" },
+      { speaker: "Mudd",  image: "i-m-211.webp", text: "I have a fondness for this particular model, Mister Spock, which you, unfortunately, are ill-equipped to appreciate.", background: "back/galor0b.jpg" },
+      { speaker: "Kirk",  image: "i-m-215.webp", text: "All right, Harry, explain. How did you get here? We left you in custody after that affair on the Rigel mining planet.", background: "back/galor3.jpg" },
+      { speaker: "Mudd",  image: "i-m-215.webp", text: "Yes, well, I organised a technical information service bringing modern industrial techniques to backward planets, " },
+      { speaker: "Mudd",  image: "i-m-215.webp", text: "making available certain valuable patents to struggling young civilisations throughout the galaxy." },
+      { speaker: "Kirk",  image: "i-m-229.webp", text: "Did you pay royalties to the owners of those patents?", background: "back/galor3b.jpg" },
+      { speaker: "Mudd",  image: "i-m-227.webp", text: "Well, actually, Kirk, as a defender of the free enterprise system, I found myself in a rather ambiguous conflict as a matter of principle.", background: "back/galor0b.jpg" },
+      { speaker: "Spock", image: "i-m-209.webp", text: "He did not pay royalties.", background: "back/galor2.jpg" },
+      { speaker: "Mudd",  image: "i-m-235.webp", text: "Knowledge, sir, should be free to all.", background: "back/galor0.jpg" },
+      { speaker: "Kirk",  image: "i-m-229.webp", text: "Who caught you?", background: "back/galor2.jpg" },
+      { speaker: "Mudd",  image: "i-m-238.webp", text: "That, sir, is an outrageous assumption.", background: "back/galor0.jpg" },
+      { speaker: "Kirk",  image: "i-m-229.webp", text: "Yes. Who caught you?", background: "back/galor2.jpg" },
+      { speaker: "Mudd",  image: "i-m-218.webp", text: "I sold the Denebians all the rights to a Vulcan fuel synthesiser.", background: "back/galor0.jpg" },
+      { speaker: "Kirk",  image: "i-m-189.webp", text: "And the Denebians contacted the Vulcans.", background: "back/galor2.jpg" },
+      { speaker: "Mudd",  image: "i-m-238.webp", text: "How'd you know?", background: "back/galor0.jpg" },
+      { speaker: "Kirk",  image: "i-m-178.webp", text: "That's what I would have done.", background: "back/galor2.jpg" },
+      { speaker: "Mudd",  image: "i-m-221.webp", text: "It's typical police mentality. They've got no sense of humour. They arrested me.", background: "back/galor0.jpg" },
+      { speaker: "Bones", image: "i-m-229.webp", text: "Oh, I find that shocking.", background: "back/galor2.jpg" },
+      { speaker: "Mudd",  image: "i-m-227.webp", text: "Worse than that. Do know what the penalty for fraud is on Deneb Five?", background: "back/galor0.jpg" },
+      { speaker: "Spock", image: "i-m-222.webp", text: "The guilty party has his choice. Death by electrocution, death by gas, death by phaser, death by hanging.", background: "back/galor2.jpg" },
+      { speaker: "Mudd",  image: "i-m-228.webp", text: "The key word in your entire peroration, Mister Spock, was, death. Barbarians. Well, of course, I left.", background: "back/galor0.jpg" },
+      { speaker: "Kirk",  image: "i-m-128.webp", text: "He broke jail.", background: "back/galor2.jpg" },
+      { speaker: "Mudd",  image: "i-m-238.webp", text: "I borrowed transportation.", background: "back/galor0.jpg" },
+      { speaker: "Kirk",  image: "i-m-130.webp", text: "He stole a spaceship.", background: "back/galor2.jpg" },
+      { speaker: "Mudd",  image: "i-m-228.webp", text: "The patrol reacted in a hostile manner.", background: "back/galor0.jpg" },
+      { speaker: "Kirk",  image: "i-m-146.webp", text: "They fired at him.", background: "back/galor2.jpg" },
+      { speaker: "Mudd",  image: "i-m-235.webp", text: "They've no respect for private property. They damaged the bloody spaceship.", background: "back/galor0.jpg" },
+      { speaker: "Mudd",  image: "i-m-235.webp", text: "Well, I got away, but I couldn't navigate, so I wandered out through unmapped space, and here I found Mudd." },
+    ],
+    onEnd: () => { currentSequenceIdx = 2; startDialogSequence(); },
+  });
+
+  // ── IM-09 ──
+  allSequences.push({
+    dialogs: [
+      { speaker: "Spock", image: "i-m-240.webp", text: "You went to substantial risk and effort to bring a starship here. Logically, you must have a compelling motive.", background: "back/galor2.jpg" },
+      { speaker: "Mudd",  image: "i-m-242.webp", text: "Spock, you're going to love it here. They all talk just the way you do.", background: "back/galor12.jpg" },
+      { speaker: "Kirk",  image: "i-m-243.webp", text: "Go on, get on with it, Harry." },
+      { speaker: "Mudd",  image: "i-m-244.webp", text: "Yes, well, right, laddybuck. So here I am in a planet with over two hundred thousand hard-working, happy androids, all of whom exist merely to serve my every whim." },
+      { speaker: "Mudd",  image: "i-m-244.webp", text: "It's absolute paradise." },
+      { speaker: "Spock", image: "i-m-236.webp", text: "Then I'm unable to discern your problem.", background: "back/galor2.jpg" },
+      { speaker: "Mudd",  image: "i-m-228.webp", text: "They won't let me go. They want to study me. They want to learn more about human beings.", background: "back/galor0.jpg" },
+      { speaker: "Kirk",  image: "i-m-229.webp", text: "They picked a fine representative." },
+      { speaker: "Mudd",  image: "i-m-227.webp", text: "Watch your tongue, lad. You're talking about Mudd the First. Well, anyway, I ran out of ideas. I simply ran out of things for them to do, and they insisted that I bring them more human beings. " },
+      { speaker: "Mudd",  image: "i-m-218.webp", text: "They need human beings to serve, to study. So I had to promise them a prime sample. A starship captain. Bright, loyal, fearless and imaginative." },
+      { speaker: "Mudd",  image: "i-m-235.webp", text: "Any captain would have done. I was lucky to get you. So you are going to take over for me here, and I can get off this rock and back to civilisation." },
+      { speaker: "Kirk",  image: "i-m-189.webp", text: "I think not, Harry." },
+      { speaker: "Mudd",  image: "i-m-248.webp", text: "You misunderstand me, lad. I'm not asking you. I'm telling you. You've no choice. Show them to their quarters.", background: "back/galor12.jpg" },
+      { speaker: "Norman and Alices", image: "i-m-250b.webp", text: "Yes, my Lord Mudd." },
+      { speaker: "Alice", image: "i-m-340.webp", text: "This way, please." },
+      { speaker: "Bones", image: "i-m-252.webp", text: "Harry, what's this?", background: "back/galor4.jpg" },
+      { speaker: "Mudd",  image: "i-m-267.webp", text: "Ah. That, gentlemen, is a shrine to the memory of my beloved Stella." },
+      { speaker: "Kirk",  image: "i-m-189.webp", text: "Who?" },
+      { speaker: "Mudd",  image: "i-m-268.webp", text: "Stella, my wife.", background: "back/galor5.jpg" },
+      { speaker: "Bones", image: "i-m-240.webp", text: "Dead?" },
+      { speaker: "Mudd",  image: "i-m-256.webp", text: "Oh, no, no, no. Merely deserted. You see, gentlemen, behind every great man there is a woman urging him on. And so it was with my Stella.", background: "back/galor5b.jpg" },
+      { speaker: "Mudd",  image: "i-m-257.webp", text: "She urged me on into outer space. Not that she meant to, but with her continual, eternal, confounded nagging. Well, I think of her constantly, and every time I do, I go further out into space.", background: "back/galor5.jpg" },
+      { speaker: "Bones", image: "i-m-260.webp", text: "That's very interesting. You leave your wife and then bring her along." },
+      { speaker: "Mudd",  image: "i-m-403.webp", text: "I had the androids construct a perfect replica of Stella so that I could gaze upon her and rejoice in her absence. Gentlemen, attend." },
+      { speaker: "Mudd",  image: "i-m-401.webp", text: "Stella, dear." },
+      { speaker: "Stella",image: "i-m-256.webp", text: "Harcourt. Harcourt Fenton Mudd, what have you been up to? ", background: "back/galor5b.jpg" },
+      { speaker: "Stella",image: "i-m-256.webp", text: "Nothing good, I'm sure. Well, let me tell you, you lazy, good-for-nothing" },
+      { speaker: "Mudd",  image: "i-m-265.webp", text: "Shut up.", background: "back/galor5.jpg" },
+      { speaker: "Stella",image: "i-m-264.webp", text: "Nothing, thing, thing," },
+      { speaker: "Mudd",  image: "i-m-267.webp", text: "Marvellous, isn't it? I finally have the last word with her, and with you.", background: "back/galor4.jpg" },
+      { speaker: "Norman",image: "i-m-272.webp", text: "You'll find this quite comfortable. Your quarters are down the hall.", background: "back/galor8.jpg" },
+      { speaker: "Alice", image: "i-m-304.webp", text: "If there is anything you need" },
+      { speaker: "Kirk",  image: "i-m-269.webp", text: "Yes. My ship." },
+      { speaker: "Alice", image: "i-m-304.webp", text: "We are not programmed to respond in that area." },
+      { speaker: "Kirk",  image: "i-m-273.webp", text: "Norman, who created you?" },
+      { speaker: "Norman",image: "i-m-274.webp", text: "The makers designed us. They came from the galaxy of Andromeda." },
+      { speaker: "Bones", image: "i-m-275.webp", text: "Then your makers weren't humanoid?" },
+      { speaker: "Norman",image: "i-m-278.webp", text: "They were, as you say, quite humanoid, but, unlike your civilisation, robots were common. We performed the necessary service functions and freed our makers to evolve a perfect social order." },
+      { speaker: "Kirk",  image: "i-m-273.webp", text: "What became of them?" },
+      { speaker: "Norman",image: "i-m-279.webp", text: "Our home planet's sun became a nova. Only a few exploratory outposts survived. This unit, myself, was part of one such outpost in your galaxy." },
+      { speaker: "Kirk",  image: "i-m-289.webp", text: "Then some of your makers survive.", background: "back/galor8.jpg" },
+      { speaker: "Norman",image: "i-m-274.webp", text: "No, Captain. They died over the stretch of time." },
+      { speaker: "Spock", image: "i-m-283.webp", text: "Whom do you serve now?" },
+      { speaker: "All",   image: "i-m-282.webp", text: "We serve Harry Mudd." },
+      { speaker: "Alice 2",image:"i-m-275.webp", text: "He has given us purpose again." },
+      { speaker: "Alice 1",image:"i-m-282.webp", text: "It is necessary to have purpose." },
+      { speaker: "Norman",image: "i-m-076.webp", text: "We lacked it for a long time." },
+      { speaker: "Alice 1",image:"i-m-285.webp", text: "We have a very extensive library section for your amusement." },
+      { speaker: "Alice 2",image:"i-m-285.webp", text: "Our research laboratories and workshops are extremely well equipped." },
+      { speaker: "Both",  image: "i-m-573.webp", text: "You are free to visit them." },
+      { speaker: "Kirk",  image: "i-m-316.webp", text: "All right. We might later. In the meantime, would you mind leaving us?" },
+      { speaker: "Both",  image: "i-m-587.webp", text: "Why should we leave you?" },
+      { speaker: "Kirk",  image: "i-m-306.webp", text: "Because we don't like you. Now." },
+      { speaker: "Kirk",  image: "i-m-289.webp", text: "Well, opinions?" },
+      { speaker: "Chekov",image: "i-m-286.webp", text: "I think we're in a lot of trouble." },
+      { speaker: "Kirk",  image: "i-m-301.webp", text: "That's a great help, Mister Chekov. Bones?" },
+      { speaker: "McCoy", image: "i-m-288.webp", text: "I think Mister Chekov's right. We are in a lot of trouble." },
+      { speaker: "Kirk",  image: "i-m-229.webp", text: "Spock. And if you say we're in a lot of trouble." },
+      { speaker: "Spock", image: "i-m-288.webp", text: "We are, and we must direct our attack to the heart of the matter." },
+      { speaker: "Spock", image: "i-m-288.webp", text: "Obviously this many androids cannot operate independently. There must be a central control system which guides the entire android population." },
+      { speaker: "Kirk",  image: "i-m-289.webp", text: "Try and find it. The rest of you, look around, learn everything you can. I'll see what else I can find out from Mister Mudd. Let's go." },
+    ],
+    onEnd: () => { currentSequenceIdx = 3; startDialogSequence(); },
+  });
+
+  // ── IM-10 ──
+  allSequences.push({
+    dialogs: [
+      { speaker: " ",    image: "i-m-294.webp",    text: " ", background: "back/galor18.jpg" },
+      { speaker: "Norman",image: "i-m-295.webp",   text: "I trust you are enjoying yourself, Mister Spock.", background: "back/galor16.jpg" },
+      { speaker: "Spock", image: "i-m-298.webp",   text: "Very interesting. Very interesting. This is a most unusual device.", background: "back/galor16b.jpg" },
+      { speaker: "Norman",image: "i-m-296.webp",   text: "It is our central control complex.", background: "back/galor16c.jpg" },
+      { speaker: "Spock", image: "i-m-439.webp",   text: "Did I understand there are more than two hundred thousand of you?", background: "back/galor16b.jpg" },
+      { speaker: "Norman",image: "i-m-434.webp",   text: "Two hundred and seven thousand, eight hundred and nine.", background: "back/galor16c.jpg" },
+      { speaker: "Spock", image: "i-m-439.webp",   text: "This would seem to be a simple relay center. Are all of you controlled through this device?", background: "back/galor16b.jpg" },
+      { speaker: " ",    image: "back/norman.gif",  text: " ", background: "back/galor17.jpg" },
+      { speaker: "Norman",image: "i-m-299.webp",   text: "I am not programmed to respond in this area.", background: "back/galor16c.jpg" },
+      { speaker: "Spock", image: "i-m-298.webp",   text: "Oh, that's quite understandable." },
+      { speaker: "Spock", image: "i-m-439.webp",   text: "Captain, I've just had a most fascinating meeting with Norman, and I'm convinced I've discovered a very important inconsistency.", background: "back/galor8.jpg" },
+      { speaker: "McCoy", image: "i-m-440.webp",   text: "Jim, you should see the research facilities. They've got a lab down there that. Well, I could spend the rest of my life studying it." },
+      { speaker: "Mudd",  image: "i-m-463.webp",   text: "I do so admire a man who devotes himself to knowledge." },
+      { speaker: "Kirk",  image: "i-m-311.webp",   text: "Don't lose your head, Bones. Nobody's staying anywhere." },
+      { speaker: "Mudd",  image: "i-m-263.webp",   text: "Stubborn, Kirk. Stubborn." },
+      { speaker: "McCoy", image: "i-m-310.webp",   text: "I wouldn't be bored, I can tell you that." },
+      { speaker: "Scott", image: "i-m-312.webp",   text: "Let go of me!" },
+      { speaker: "Scott", image: "i-m-313.webp",   text: "Now what are you doing? What kind of a woman", background: "back/galor8.jpg" },
+      { speaker: "Alice", image: "i-m-340.webp",   text: "The last one, lord." },
+      { speaker: "Mudd",  image: "i-m-315.webp",   text: "Splendid. Splendid. Welcome to Mudd, Mister Scott." },
+      { speaker: "Scott", image: "i-m-317.webp",   text: "Harry Mudd! Oh, you bogus frat, you. You're the cause of all this, are you?" },
+      { speaker: "Kirk",  image: "i-m-306.webp",   text: "Scotty, you were ordered to stay aboard." },
+      { speaker: "Scott", image: "i-m-317.webp",   text: "Aye, sir. And I stayed until that female gargantua threw me into the transporter beams." },
+      { speaker: "Kirk",  image: "i-m-316.webp",   text: "What does she mean, the last one?" },
+      { speaker: "Mudd",  image: "i-m-327.webp",   text: "Didn't I tell you, Kirk? I beamed a few dozen androids up to your ship. They've been sending your crew to the surface for the past couple of hours. They're all down now." },
+      { speaker: "Kirk",  image: "i-m-323.webp",   text: "Are you out of your mind? You can't beam down an entire crew of a spaceship. Somebody has to be on board." },
+      { speaker: "Mudd",  image: "i-m-325.webp",   text: "There is an entire crew aboard. An entire crew of androids. They learn very quickly, Captain. The fact is, I've taken over your whole ship. There's nothing you can do about it." },
+      { speaker: "Kirk",  image: "i-m-327.webp",   text: "Harry, Harry, you'll never get away with it." },
+      { speaker: "Mudd",  image: "i-m-319.webp",   text: "Well, who's to stop me?" },
+      { speaker: "Kirk",  image: "i-m-332.webp",   text: "Starfleet." },
+      { speaker: "Mudd",  image: "i-m-327.webp",   text: "But now, Captain, now I have a ship of my own as fast as any in the fleet, so how will they catch me, eh?" },
+      { speaker: "Mudd",  image: "i-m-467.webp",   text: "Just think of it, laddybuck. Harry Mudd with his own crew of lovelies aboard your vessel. Think about that." },
+      { speaker: "Kirk",  image: "i-m-354.webp",   text: "I'm trying not to." },
+      { speaker: "Mudd",  image: "i-m-238.webp",   text: "Alice." },
+      { speaker: "Spock", image: "i-m-331.webp",   text: "He could successfully accomplish it, Captain. I've questioned a number of the androids, and they're totally loyal to Mudd." },
+      { speaker: "Spock", image: "i-m-298.webp",   text: "Perhaps of more concern is the fact that this android population can literally provide anything a human being could ask for in unlimited quantity." },
+      { speaker: "Kirk",  image: "i-m-330.webp",   text: "Yes, I know. That's what worries me. How will my crew react in a world where they can have everything they want simply by asking for it." },
+      { speaker: "Alices",image: "i-m-338.webp",   text: "You desire something, lord?", background: "back/galor0d.jpg" },
+      { speaker: "Chekov",image: "i-m-336.webp",   text: "Oh, yes, thank you. You're Alice", background: "back/galor0.jpg" },
+      { speaker: "Alice 118",image:"i-m-340.webp", text: "One eighteen.", background: "back/galor0d.jpg" },
+      { speaker: "Chekov",image: "i-m-337.webp",   text: "And you're Alice", background: "back/galor0.jpg" },
+      { speaker: "Alice 322",image:"i-m-342.webp", text: "Three twenty two.", background: "back/galor0c.jpg" },
+      { speaker: "Chekov",image: "i-m-339.webp",   text: "Oh, well, it doesn't make much difference. You're both lovely.", background: "back/galor0b.jpg" },
+      { speaker: "Alices",image: "i-m-344.webp",   text: "Thank you, my lord.", background: "back/galor0.jpg" },
+      { speaker: "Alice 118",image:"i-m-340.webp", text: "You desire something else, lord?", background: "back/galor0d.jpg" },
+      { speaker: "Chekov",image: "i-m-341.webp",   text: "What a shame you're not real.", background: "back/galor0b.jpg" },
+      { speaker: "Alice 322",image:"i-m-342.webp", text: "We are real, my lord.", background: "back/galor0c.jpg" },
+      { speaker: "Chekov",image: "i-m-339.webp",   text: "Oh, I mean real girls.", background: "back/galor0b.jpg" },
+      { speaker: "Alice 118",image:"i-m-340.webp", text: "We are programmed to function as human females, lord.", background: "back/galor0d.jpg" },
+      { speaker: "Chekov",image: "i-m-339.webp",   text: "You are?", background: "back/galor0b.jpg" },
+      { speaker: "Alices",image: "i-m-338.webp",   text: "Yes, my lord.", background: "back/galor0c.jpg" },
+      { speaker: "Chekov",image: "i-m-341.webp",   text: "Harry Mudd programmed you?", background: "back/galor0b.jpg" },
+      { speaker: "Alices",image: "i-m-340.webp",   text: "Yes, my lord.", background: "back/galor0c.jpg" },
+      { speaker: "Chekov",image: "i-m-346.webp",   text: "That unprincipled, evil-minded, lecherous kulak Harry Mudd programmed you?", background: "back/galor0b.jpg" },
+      { speaker: "Alices",image: "i-m-342.webp",   text: "Yes, my lord.", background: "back/galor0c.jpg" },
+      { speaker: "Chekov",image: "i-m-341.webp",   text: "This place is even better than Leningrad.", background: "back/galor0b.jpg" },
+      { speaker: "Scott", image: "i-m-351.webp",   text: "Absolutely fantastic. Hand-worked to the finest tolerances, microvision, and a nanopulse laser. I've never seen the like before.", background: "back/galor18.jpg" },
+      { speaker: "Norman",image: "i-m-353.webp",   text: "You may command us to make anything for you, or do the work yourself for pleasure. You may have the services of any number of craftsmen, exclusive use of the computer facilities. Anything." },
+      { speaker: "Scott", image: "i-m-317.webp",   text: "Captain, you should see this shop! Why, they have facilities we've never even thought of.", background: "back/galor18b.jpg" },
+      { speaker: "Kirk",  image: "i-m-354.webp",   text: "Is that the way you're going to do it, Mudd? Hit my people at their weakest point?", background: "back/galor18c.jpg" },
+      { speaker: "Norman",image: "i-m-355.webp",   text: "We only wish to make you happy and comfortable, Captain. If we are to serve your kind, we must understand you. Our Lord, Harry Mudd was only one example for us. Now we are learning a great deal from all of you." },
+      { speaker: "Kirk",  image: "i-m-087.webp",   text: "All right, here we are, birds in a gilded cage. The question is, how do we get out of here?", background: "back/galor8.jpg" },
+      { speaker: "Chekov",image: "i-m-358.webp",   text: "I don't know, sir, but it's a very nice gilded cage.", background: "back/galor13.jpg" },
+      { speaker: "Uhura", image: "i-m-360.webp",   text: "And it is a very pleasant place, Captain." },
+      { speaker: "Scott", image: "i-m-361.webp",   text: "What did they offer you, Uhura?" },
+      { speaker: "Uhura", image: "i-m-362.webp",   text: "Oh, nothing really important. Just immortality." },
+      { speaker: "Kirk",  image: "i-m-354.webp",   text: "All right. We're getting back to the ship, and don't you forget it. Straighten up! This may be a gilded cage filled with everything you always wanted, but it's still a cage. We don't belong here. We belong on that ship up there.", background: "back/galor8.jpg" },
+      { speaker: "Alice 471",image:"i-m-381.webp", text: "Do you require something, lord?" },
+      { speaker: "Kirk",  image: "i-m-382.webp",   text: "No. Yes. My ship." },
+    ],
+    onEnd: () => { location.href = 'IM-11.html'; },
+  });
+}
+
+function startDialogSequence() {
+  currentDialogIdx = 0;
+  showScene('dialog');
+  showDialog(0);
+}
+
+function showDialog(index) {
+  const seq = allSequences[currentSequenceIdx];
+  if (index >= seq.dialogs.length) {
+    seq.onEnd();
+    return;
+  }
+  const d = seq.dialogs[index];
+  if (d.background) backgroundImg.src = d.background;
+  characterImg.style.opacity = '0';
+  setTimeout(() => {
+    characterImg.src = d.image;
+    dialogText.innerHTML = `<strong>${d.speaker}</strong><br>${d.text}`;
+    if (!d.image.includes('nothing.webp')) {
+      setTimeout(() => { characterImg.style.opacity = '1'; }, 150);
+    }
+  }, 300);
+}
+
+nextBtn.addEventListener('click', () => {
+  currentDialogIdx++;
+  showDialog(currentDialogIdx);
+});
+
+// ─────────────────────────────────────────
+// HUB (IM-06)
+// ─────────────────────────────────────────
+document.getElementById('hubBtn').addEventListener('click', () => {
+  showScene('puzzle');
+  resetPuzzle();
+});
+
+// ─────────────────────────────────────────
+// PUZZLE (IM-07)
+// ─────────────────────────────────────────
+const colorClasses = ['', 'color-red', 'color-blue', 'color-green'];
+const secretCombination = [2, 1, 3]; // Blue, Red, Green
+const puzzleButtons = [
+  document.getElementById('pbtn1'),
+  document.getElementById('pbtn2'),
+  document.getElementById('pbtn3'),
+];
+const secretBtn = document.getElementById('secretBtn');
+
+function resetPuzzle() {
+  puzzleButtons.forEach(b => {
+    b.setAttribute('data-color', '0');
+    b.classList.remove('color-red', 'color-blue', 'color-green');
+  });
+  secretBtn.classList.remove('unlocked');
+}
+
+function checkCombination() {
+  const current = puzzleButtons.map(b => parseInt(b.getAttribute('data-color')));
+  const isCorrect = current.every((c, i) => c === secretCombination[i]);
+  secretBtn.classList.toggle('unlocked', isCorrect);
+}
+
+puzzleButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    let c = parseInt(btn.getAttribute('data-color'));
+    c = c === 3 ? 1 : c + 1;
+    btn.classList.remove('color-red', 'color-blue', 'color-green');
+    if (c > 0) btn.classList.add(colorClasses[c]);
+    btn.setAttribute('data-color', c);
+    checkCombination();
+  });
+});
+
+secretBtn.addEventListener('click', () => {
+  if (!secretBtn.classList.contains('unlocked')) return;
+  // Advance to IM-08 dialog sequence
+  currentSequenceIdx = 1;
+  startDialogSequence();
+});
+
+// ─────────────────────────────────────────
+// BOOT
+// ─────────────────────────────────────────
+buildSequences();
+currentSequenceIdx = 0;
+startDialogSequence();
+
+// Prevent image dragging globally
+document.addEventListener('dragstart', e => { if (e.target.tagName === 'IMG') e.preventDefault(); });
+</script>
+</body>
+</html>

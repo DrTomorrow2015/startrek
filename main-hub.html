@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>I-Hub Control Panel</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: black;
+    }
+
+    .hub-container {
+      position: relative;
+      width: 1000px;
+      height: 550px;
+      background: url('back/switchback.png') no-repeat top left;
+      background-size: 1000px 550px;
+      image-rendering: pixelated;
+    }
+
+    .center-wrap {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .control-panel {
+      position: absolute;
+      top: 50px;
+      left: 270px;
+      width: 280px;
+      height: 250px;
+      background: url('back/panel-z.png') center/contain no-repeat;
+    }
+
+    .control-button,
+    .control-button-2,
+    .control-button-3 {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      background: url('back/button2.png') center/cover no-repeat;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .control-button-4 {
+      position: absolute;
+      width: 28px;
+      height: 90px;
+      background: url('back/button4.png') center/cover no-repeat;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .control-button {
+      top: 245px;
+      left: 320px;
+    }
+
+    .control-button-2 {
+      top: 155px;
+      left: 320px;
+    }
+
+    .control-button-3 {
+      top: 75px;
+      left: 320px;
+    }
+    .control-button-4 {
+      top: 309px;
+      left: 473px;
+    }
+
+    .control-button:hover,
+    .control-button-2:hover,
+    .control-button-3:hover {
+      transform: scale(1.1);
+      filter: brightness(1.2);
+    }
+
+    .control-button:hover,
+    .control-button-4:hover {
+    }
+
+    .control-button:active,
+    .control-button-2:active,
+    .control-button-3:active {
+      transform: scale(0.95);
+    }
+
+    .control-button-4:active {
+    }
+
+  </style>
+</head>
+<body>
+  <div class="center-wrap">
+    <div class="hub-container">
+      <div class="control-panel"></div>
+      <a href="log8.html" class="control-button" title="Mudds Passion"></a>
+      <a href="IM-00.html" class="control-button-2" title="I Mudd"></a>
+      <a href="log1.html" class="control-button-3" title="Mudds Women"></a>
+      <a href="games.html" class="control-button-4" title="Starfleet Records"></a>
+    </div>
+  </div>
+</body>
+</html>

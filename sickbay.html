@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Screen Image with GIF</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        #background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+        }
+       #gifOverlay {
+            position: fixed;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            height: 350px;
+        }
+    </style>
+</head>
+<body>
+    <img id="background" src="back/sickbay8.jpg" alt="">
+    <img id="gifOverlay" src="back/sickscreen2.gif" alt="">
+
+    <script>
+        setTimeout(function() {
+            window.location.href = 'MW-13.html';
+        }, 3000);
+    </script>
+</body>
+</html>
+
+

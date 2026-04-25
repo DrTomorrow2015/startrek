@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>18</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+      color: white;
+      background: #000;
+    }
+
+    /* Main container centers everything */
+    .scene-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* The frame maintains 900:450 aspect ratio and scales to fit screen */
+    .frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 100vw;
+      max-height: calc(100vw * 450 / 900); /* Maintain aspect ratio based on width */
+      overflow: hidden;
+      background: #000;
+    }
+
+    /* Alternative constraint: if height is limiting factor */
+    @media (min-aspect-ratio: 900/450) {
+      .frame {
+        max-width: calc(100vh * 900 / 450);
+        max-height: 100vh;
+      }
+    }
+
+    /* All images fill the frame and scale together */
+    .frame img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
+
+    /* Layer ordering */
+    .background {
+      z-index: 1;
+    }
+    
+    .character {
+      bottom: 200px;
+      z-index: 2;
+      object-fit: contain; /* Keep character proportions */
+    }
+
+    /* New container to group dialog box and button, and center them both */
+    #dialog-and-button-container {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      /* Centers the combined width */
+      transform: translateX(-50%); 
+      display: flex;
+      /* Align to the bottom of the logbox (fixes vertical position) */
+      align-items: flex-end; 
+      max-width: 1800px; /* INCREASED: Very wide limit for large screens */
+      width: 95%; /* Use 95% to ensure spacing on wide screens */
+      z-index: 10;
+    }
+
+    /* Dialog box - will now grow to fill space */
+    #logbox {
+      position: static; 
+      transform: none; 
+      width: auto; 
+      max-width: none; /* NEW: Removed fixed width constraint for maximum expansion */
+      padding: 15px 10px; 
+      border-radius: 15px;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      backdrop-filter: blur(10px);
+      border: 2px solid #666;
+      box-sizing: border-box;
+      z-index: 10;
+      flex-grow: 1; /* This makes it take all space available after button space is used */
+      min-height: 90px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+    }
+
+    .dialog-text {
+      max-width: 100%; 
+      margin: 0 auto;
+      font-size: clamp(14px, 2vw, 18px); 
+      line-height: 1.4em;
+      text-align: center;
+      margin-bottom: 0; 
+      white-space: pre-wrap; 
+      padding: 10px 0; 
+    }
+
+    /* Buttons container - OUTSIDE logbox, aligned right next to it */
+    .buttons-container {
+      margin-top: 0; 
+      text-align: left; 
+      padding-right: 0;
+      margin-left: 10px; /* Space between dialog and button */
+      margin-bottom: 0;
+      flex-shrink: 0; 
+    }
+
+    .image-btn {
+      cursor: pointer;
+      width: clamp(50px, 7vw, 70px); 
+      height: clamp(64px, 9vw, 90px);
+      border: none;
+      background: transparent;
+      padding: 0;
+      /* Adjusted to align button visually with the text box */
+      transform: translateY(-5px); 
+    }
+
+    .image-btn:hover {
+      opacity: 0.8;
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 768px) {
+      #dialog-and-button-container {
+        width: 98%; 
+        align-items: center; 
+      }
+      
+      #logbox {
+        padding: 15px 10px;
+        max-width: 100%; 
+        min-height: 70px; 
+      }
+      
+      .buttons-container {
+        margin-left: 5px;
+      }
+
+      .image-btn {
+        transform: translateY(0); 
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene-container">
+    <div class="frame" id="sceneFrame">
+      <img id="background" class="background" alt="Background" src="back/14.jpg" />
+      <img id="character" class="character" alt="Character" />
+    </div>
+  </div>
+  
+  <div id="dialog-and-button-container">
+    <div id="logbox">
+      <div class="dialog-text" id="dialogText"></div>
+    </div>
+    <div class="buttons-container">
+      <img src="TOS-Badge.webp" alt="Next" class="image-btn" id="nextBtn" />
+    </div>
+  </div>
+
+<script>
+  const backgroundImg = document.getElementById('background');
+  const characterImg = document.getElementById('character');
+  const dialogText = document.getElementById('dialogText');
+  const nextBtn = document.getElementById('nextBtn');
+
+  const dialogSequence = [
+  { speaker: "Spock", image: "MW-594.webp", visible: 0, text: "Infrared reading. Check traverse three, grid zero four zero.", background: "back/10.jpg" },
+  { speaker: "Farrell", image: "MW-028.webp", visible: 0, text: "About eleven miles, bearing one two one from the mining company.", background: "back/19.jpg" },
+  { speaker: "Sulu", image: "MW-005.webp", visible: 0, text: "That's Ben Childress' quarters.", background: "back/04.jpg" },
+  { speaker: "Spock", image: "MW-623.webp", visible: 0, text: "There's a heat unit operating in there. It could be a cookstove.", background: "back/27.jpg" },
+  { speaker: "Kirk", image: "MW-602.webp", visible: 0, text: "Have Mudd meet me in the transporter room.", background: "back/00.jpg" },
+  { speaker: "Spock", image: "MW-020.webp", visible: 0, text: "Mudd?", background: "back/02.jpg" },
+  { speaker: "Kirk", image: "MW-679.webp", visible: 0, text: "The name of this game.", background: "back/00.jpg" },
+  { speaker: "Childress", image: "MW-641.webp", visible: 0, text: "I had things where I wanted them.", background: "back/ophiuchus4.jpg" },
+  { speaker: "Eve", image: "MW-633.webp", visible: 0, text: "I ate some of your food, so I paid with some chores.", background: "back/ophiuchus8.jpg" },
+  { speaker: "Childress", image: "MW-641.webp", visible: 0, text: "And I do my own cooking. I've not laid a hand on you. Remember that.", background: "back/ophiuchus4.jpg" },
+  { speaker: "Eve", image: "MW-642.webp", visible: 0, text: "Oh, the sound of male ego. You travel halfway across the galaxy, and it's still the same song. There. You going to eat or talk?", background: "back/ophiuchus6.jpg" },
+  { speaker: "Childress", image: "MW-645.webp", visible: 0, text: "I guess I'm supposed to sit, taste, and roll my eyes. Ooh, female cooking again. I've tasted better, by my own hand.", background: "back/ophiuchus4.jpg" },
+  { speaker: "Eve", image: "MW-642.webp", visible: 0, text: "Well you're tasting some of it now. I couldn't scrape three layers of your leavings out of that pan.", background: "back/ophiuchus6.jpg" },
+  { speaker: "Childress", image: "MW-697.webp", visible: 0, text: "You find me a well, some decent water, then talk.", background: "back/ophiuchus4.jpg" },
+  { speaker: "Eve", image: "MW-667.webp", visible: 0, text: "Well, why don't you hang your pan out in the wind and let the sand blast it clean, or hadn't you thought about that?", background: "back/ophiuchus6.jpg" },
+  { speaker: "Childress", image: "MW-677.webp", visible: 0, text: "It might work. That solitaire?" },
+  { speaker: "Eve", image: "MW-652.webp", visible: 0, text: "Double jack.", background: "back/ophiuchus5.jpg" },
+  { speaker: "Childress", image: "MW-655.webp", visible: 0, text: "The red eight ought to go on the black nine.", background: "back/ophiuchus10.jpg" },
+  { speaker: "Eve", image: "MW-667.webp", visible: 0, text: "Not in double jack.", background: "back/ophiuchus4.jpg" },
+  { speaker: "Childress", image: "MW-662.webp", visible: 0, text: "You're not only plain as an old bucket, you're not even good company. What the devil happened to your looks, anyway?", background: "back/ophiuchus8.jpg" },
+  { speaker: "Eve", image: "MW-656.webp", visible: 0, text: "I got tired of you. I slumped.", background: "back/ophiuchus10.jpg" },
+  { speaker: "Childress", image: "MW-664.webp", visible: 0, text: "You heard what I said. You're homely! I've got enough in crystals already to buy queens by the gross!", background: "back/ophiuchus8.jpg" },
+  { speaker: " ", image: "MW-666.webp", visible: 0, text: " ", background: "back/ophiuchus1.jpg" },
+  { speaker: "Childress", image: "MW-669.webp", visible: 0, text: "I didn't touch her.", background: "back/ophiuchus1.jpg" },
+  { speaker: "Mudd", image: "MW-671.webp", visible: 0, text: "Thank heaven you found her.", background: "back/ophiuchus7.jpg" },
+  { speaker: "Childress", image: "MW-662.webp", visible: 0, text: "She's been bubbling with gratitude ever since.", background: "back/ophiuchus6.jpg" },
+  { speaker: "Kirk", image: "MW-679.webp", visible: 0, text: "Sit down. Tell him. Tell him, Harry.", background: "back/ophiuchus7.jpg" },
+  { speaker: "Mudd", image: "MW-692.webp", visible: 0, text: "Ah. Yes, well.", background: "back/ophiuchus6.jpg" },
+  { speaker: "Kirk", image: "MW-673.webp", visible: 0, text: "The Venus drugs, Harry.", background: "back/ophiuchus7.jpg" },
+  { speaker: "Childress", image: "MW-677.webp", visible: 0, text: "Venus drug? I've heard of it but, it's not just one of those stories?", background: "back/ophiuchus6.jpg" },
+  { speaker: "Kirk", image: "MW-497.webp", visible: 0, text: "Oh, it exists, illegally.", background: "back/ophiuchus7.jpg" },
+  { speaker: "Mudd", image: "MW-675.webp", visible: 0, text: "Well, actually, you see, it's a relatively harmless drug.", background: "back/ophiuchus4.jpg" },
+  { speaker: "Eve", image: "MW-656.webp", visible: 0, text: "Harmless!", background: "back/ophiuchus10.jpg" },
+  { speaker: "Mudd", image: "MW-675.webp", visible: 0, text: "Well, what it does is give you more of whatever you have. Well, with men, it makes them more muscular. Women, rounder. Men, more aggressive. Women, more feminine, and", background: "back/ophiuchus4.jpg" },
+  { speaker: "Kirk", image: "MW-679.webp", visible: 0, text: "He gave it to the women before you met them." },
+  { speaker: "Childress", image: "MW-682.webp", visible: 0, text: "Does that mean the others? They really look like she does?", background: "back/ophiuchus5.jpg" },
+  { speaker: "Mudd", image: "MW-692.webp", visible: 0, text: "Mister Childress, I", background: "back/ophiuchus4.jpg" },
+  { speaker: "Childress", image: "MW-697.webp", visible: 0, text: "Is that what it means?", background: "back/ophiuchus5.jpg" },
+  { speaker: "Eve", image: "MW-667.webp", visible: 0, text: "Yes, that's what it means!" },
+  { speaker: "Childress", image: "MW-677.webp", visible: 0, text: "What happened to my partners?", background: "back/ophiuchus5.jpg" },
+  { speaker: "Kirk", image: "MW-713.webp", visible: 0, text: "They've left for their quarters during the storm, Childress. They're married. Subspace radio marriage. It was a fraud. They can get out of it.", background: "back/ophiuchus7.jpg" },
+  { speaker: "Mudd", image: "MW-692.webp", visible: 0, text: "If they want to." },
+  { speaker: "Childress", image: "MW-697.webp", visible: 0, text: "Why?", background: "back/ophiuchus5.jpg" },
+  { speaker: "Mudd", image: "MW-671.webp", visible: 0, text: "You can't condemn the women." },
+  { speaker: "Childress", image: "MW-547.webp", visible: 0, text: "I can! A man goes out and fights, almost dies. We all almost die. We should have, but we didn't. And now that we've got the good life in our hands, you bring us women for wives that", background: "back/ophiuchus9.jpg" },
+  { speaker: "Eve", image: "MW-687.webp", visible: 0, text: "You don't want wives, you want this. This is what you want, Mister Childress. I hope you remember it and dream about it, because you can't have it. It's not real!", background: "back/ophiuchus6.jpg" },
+  { speaker: "Eve", image: "MW-696.webp", visible: 0, text: "Is this the kind of wife you want, Ben? Not someone to help you, not a wife to cook and sew and cry and need, but this kind. Selfish, vain, useless. Is this what you really want? All right, then. Here it is.", background: "back/ophiuchus6.jpg" },
+  { speaker: "Kirk", image: "MW-679.webp", visible: 0, text: "Quite a woman, eh, Childress?", background: "back/ophiuchus7.jpg" },
+  { speaker: "Childress", image: "MW-697.webp", visible: 0, text: "A fake, pumped up by a drug.", background: "back/ophiuchus9.jpg" },
+  { speaker: "Kirk", image: "MW-705.webp", visible: 0, text: "By herself. She took no drug.", background: "back/ophiuchus7.jpg" },
+  { speaker: "Eve", image: "MW-696.webp", visible: 0, text: "I swallowed it.", background: "back/ophiuchus6.jpg" },
+  { speaker: "Kirk", image: "MW-713.webp", visible: 0, text: "Coloured gelatin.", background: "back/ophiuchus7.jpg" },
+  { speaker: "Mudd", image: "MW-707.webp", visible: 0, text: "Yes, they took away my drug and substituted that." },
+  { speaker: "Eve", image: "MW-698.webp", visible: 0, text: "But that can't be.", background: "back/ophiuchus6.jpg" },
+  { speaker: "Kirk", image: "MW-713.webp", visible: 0, text: "There's only one kind of woman.", background: "back/ophiuchus7.jpg" },
+  { speaker: "Mudd", image: "MW-692.webp", visible: 0, text: "Or man, for that matter." },
+  { speaker: "Kirk", image: "MW-715.webp", visible: 0, text: "You either believe in yourself, or you don't. All right Childress, I've gone as far with you as I intend to. I want those lithium crystals and I want them now. Enterprise, this is Kirk." },
+  { speaker: "Spock", image: "MW-712.webp", visible: 0, text: "[OC] Spock here, Captain." },
+  { speaker: "Kirk", image: "MW-715.webp", visible: 0, text: "Stand by. Do I beam down a search party?" },
+  { speaker: "Childress", image: "MW-704.webp", visible: 0, text: "No, the crystals are here, and you're welcome to them.", background: "back/ophiuchus9.jpg" },
+  { speaker: "Kirk", image: "MW-712.webp", visible: 0, text: "Stand by, Mister Spock. We're coming aboard with the lithium crystals." },
+  { speaker: "Spock", image: "MW-715.webp", visible: 0, text: "[OC] How many coming, Captain?" },
+  { speaker: "Childress", image: "MW-717.webp", visible: 0, text: "Eve will stay, today at least. We, er, we want to talk." },
+  { speaker: "Kirk", image: "MW-713.webp", visible: 0, text: "Eve?" },
+  { speaker: "Eve", image: "MW-704.webp", visible: 0, text: "You've got someone up there called the Enterprise." },
+  { speaker: "Kirk", image: "MW-723.webp", visible: 0, text: "Two of us, Mister Spock. Come on, Mister Mudd.", background: "back/ophiuchus1.jpg" },
+  { speaker: "Mudd", image: "MW-723.webp", visible: 0, text: "Don't you think you could possibly, by accident, arrange to leave me behind here? On this planet that would be punishment enough." },
+  { speaker: "Kirk", image: "MW-724.webp", visible: 0, text: "I can't do that, Harry, but I will appear as a character witness at your trial. If you think that'll help." },
+  { speaker: "Mudd", image: "MW-725.webp", visible: 0, text: "They'll throw away the key." },
+  { speaker: "McCoy", image: "MW-728.webp", visible: 0, text: "That must have been quite a talk you made down there. Ever try considering the patent medicine business?", background: "back/21.jpg" },
+  { speaker: "Kirk", image: "MW-729.webp", visible: 0, text: "Why should I work your side of the street?" },
+  { speaker: "Spock", image: "MW-733.webp", visible: 0, text: "I'm happy the affair is over. A most annoying emotional episode.", background: "back/02b.jpg" },
+  { speaker: "McCoy", image: "MW-732.webp", visible: 0, text: "Smack right in the old heart. Oh, I'm sorry. In your case, it would be about here.", background: "back/21.jpg" },
+  { speaker: "Spock", image: "MW-733.webp", visible: 0, text: "The fact that my internal arrangement differs from yours, Doctor, pleases me no end.", background: "back/02b.jpg" },
+  { speaker: "Farrell", image: "MW-737.webp", visible: 0, text: "Course plotted and all systems in operation.", background: "back/12.jpg" },
+  { speaker: "Sulu", image: "MW-738.webp", visible: 0, text: "Engines engaged. Helm answering." },
+  { speaker: "Farrell", image: "MW-737.webp", visible: 0, text: "Out of orbit, sir." },
+  { speaker: "Kirk", image: "MW-728.webp", visible: 0, text: "Ahead full.", background: "back/21.jpg" },
+  { speaker: "Sulu", image: "MW-738.webp", visible: 0, text: "Ahead full, sir.", background: "back/12.jpg" }
+
+  ];
+
+  let currentIndex = 0;
+
+  // Prevent image dragging
+  document.querySelectorAll('.frame img').forEach(img => {
+    img.addEventListener('dragstart', e => e.preventDefault());
+  });
+
+  function showDialog(index) {
+    if (index >= dialogSequence.length) {
+      location.href = 'main-hub.html';
+      return;
+    }
+
+    const d = dialogSequence[index];
+
+    // Update background
+    if (d.background) {
+      backgroundImg.src = d.background;
+    }
+
+    // Fade out character
+    characterImg.style.opacity = '0';
+
+    // Update character image and fade in
+    setTimeout(() => {
+      characterImg.src = d.image;
+      dialogText.innerHTML = `<strong>${d.speaker}</strong><br>${d.text}`;
+      
+      // Only fade in if not the "nothing" image
+      if (!d.image.includes('nothing.webp')) {
+        setTimeout(() => {
+          characterImg.style.opacity = '1';
+        }, 150);
+      }
+    }, 300);
+  }
+
+  nextBtn.addEventListener('click', () => {
+    currentIndex++;
+    showDialog(currentIndex);
+  });
+
+  // Start
+  showDialog(0);
+</script>
+
+</body>
+</html>

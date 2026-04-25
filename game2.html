@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>game2</title>
+  <style>
+    html, body {
+      margin: 0; padding: 0; height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+      color: white;
+      background: #000;
+    }
+
+    .scene-container {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .frame {
+      position: relative;
+      width: 100%; height: 100%;
+      max-width: 100vw;
+      max-height: calc(100vw * 450 / 900);
+      overflow: hidden;
+      background: #000;
+    }
+
+    @media (min-aspect-ratio: 900/450) {
+      .frame {
+        max-width: calc(100vh * 900 / 450);
+        max-height: 100vh;
+      }
+    }
+
+    .frame img {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
+
+    .background { z-index: 1; }
+
+    .character {
+      bottom: 200px;
+      z-index: 2;
+      object-fit: contain;
+
+    }
+
+    /* ---------- DIALOG MODE ---------- */
+    #dialog-and-button-container {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: flex-end;
+      max-width: 1800px;
+      width: 95%;
+      z-index: 10;
+    }
+
+    #logbox {
+      position: static;
+      width: auto;
+      padding: 15px 10px;
+      border-radius: 15px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      backdrop-filter: blur(10px);
+      border: 2px solid #666;
+      box-sizing: border-box;
+      z-index: 10;
+      flex-grow: 1;
+      min-height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dialog-text {
+      max-width: 100%;
+      margin: 0 auto;
+      font-size: clamp(14px, 2vw, 18px);
+      line-height: 1.4em;
+      text-align: center;
+      white-space: pre-wrap;
+      padding: 10px 0;
+    }
+
+    .buttons-container {
+      margin-left: 10px;
+      flex-shrink: 0;
+    }
+
+    .image-btn {
+      cursor: pointer;
+      width: clamp(50px, 7vw, 70px);
+      height: clamp(64px, 9vw, 90px);
+      border: none;
+      background: transparent;
+      padding: 0;
+      transform: translateY(-5px);
+    }
+
+    .image-btn:hover { opacity: 0.8; }
+
+    /* ---------- CHOICE MODE ---------- */
+    #choice-container {
+      position: fixed;
+      bottom: 33px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 1600px;
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    .choice-box {
+      flex: 1;
+      background: rgba(0,0,0,0.6);
+      border: 2px solid #666;
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: 0.2s;
+    }
+
+    .choice-box:hover {
+      background: rgba(70,70,70,0.6);
+      transform: scale(1.03);
+    }
+
+    .choice-text {
+      font-size: clamp(14px, 2vw, 18px);
+      line-height: 1.4em;
+      white-space: pre-wrap;
+    }
+
+    /* ---------- MOBILE ---------- */
+    @media (max-width: 768px) {
+      #dialog-and-button-container {
+        width: 98%;
+        align-items: center;
+      }
+      #logbox {
+        padding: 15px 10px;
+        min-height: 70px;
+      }
+      .buttons-container { margin-left: 5px; }
+      .image-btn { transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SCENE -->
+<div class="scene-container">
+  <div class="frame" id="sceneFrame">
+    <img id="background" class="background" alt="Background" src="" />
+    <img id="character" class="character" alt="Character" src="" />
+  </div>
+</div>
+
+<!-- DIALOG UI -->
+<div id="dialog-and-button-container">
+  <div id="logbox">
+    <div class="dialog-text" id="dialogText"></div>
+  </div>
+  <div class="buttons-container">
+    <img src="TOS-Badge.webp" alt="Next" class="image-btn" id="nextBtn" />
+  </div>
+</div>
+
+<!-- CHOICE UI -->
+<div id="choice-container" style="display:none;"></div>
+
+
+<script>
+  // ─────────────────────────────────────────────
+  //  SCENE DATA
+  //  Each node is either:
+  //    type:"dialog"  — sequential lines, then goes to: next node id
+  //    type:"choice"  — shows choice boxes leading to different node ids
+  //    type:"end"     — shows The End screen
+  //
+  //  Dialog line fields:
+  //    speaker, text, image (character sprite), background
+  //    image/background omitted = keep previous
+  // ─────────────────────────────────────────────
+
+  const SCENES = {
+
+    // ── ACT 1: Tralane's trap ──────────────────────────────────────────────
+    "intro": {
+      type: "dialog",
+      next: "farragut_approach",
+      lines: [
+    { speaker: "Uhura", image: "uhura1.webp", visible: 0, text: "Captain, I'm not picking up any signals, other than the automated distress call. Maybe they", background: "back/02.jpg" },
+    { speaker: " ", image: "back/nothing.png", visible: 0, text: "CAPTAIN KIRK! Its been absolutely AGES!", background: "back/tscreen.jpg" },
+    { speaker: "Tralane", image: "trelane1.webp", visible: 0, text: "Surely you didn't think I'd forget our last meeting? How you took advantage of me so!", background: "back/screen1.jpg" },
+    { speaker: "Spock", image: "i-m-095.webp", visible: 0, text: " ", background: "back/10.jpg" },
+    { speaker: "Tralane", image: "trelane2.webp", visible: 0, text: "My little distress signal was a ruse, to bring you to me. I hope you don't mind.", background: "back/08.jpg" },
+    { speaker: "Kirk", image: "MW-037.webp", visible: 0, text: "As a matter of fact, I DO mind, Mister! Now, get off my ship!", background: "back/14.jpg" },
+    { speaker: "Tralane", image: "trelane4.webp", visible: 0, text: "Not so fast, Kirk! Did you really think it would be that easy? We've just barely started.", background: "back/20.jpg" },
+    { speaker: "Tralane", image: "trelane9.webp", visible: 0, text: "You proved to be rather bothersome in our last encounter, Captain. There is the little matter of your trial.", background: "back/20.jpg" },
+    { speaker: "Tralane", image: "trelane13.webp", visible: 0, text: "And I am your judge!", background: "back/blue-back.jpg" },
+    { speaker: "Tralane", image: "trelane19.webp", visible: 0, text: "The court calls the first witness...James T Kirk.", background: "back/blue-back.jpg" },
+      ]
+    },
+
+    // ── ACT 2: The Farragut ───────────────────────────────────────────────
+    "farragut_approach": {
+      type: "dialog",
+      next: "choice_pike_or_kirk",
+      lines: [
+    { speaker: "Uhura", image: "uhura1.webp", visible: 0, text: "Captain, I'm picking up a Federation distress beacon.", background: "back/02.jpg" },
+    { speaker: "Urura", image: "uhura1.webp", visible: 0, text: "Its right in front of us, Sir." },
+    { speaker: " ", image: "ships/farragut.png", visible: 0, text: " ", background: "back/background6.jpg" },
+    { speaker: "Farrell", image: "MW-411.webp", visible: 0, text: "SIR! It's the USS Farragut! She was decommissioned 12 years ago.", background: "back/19.jpg" },
+    { speaker: "Spock", image: "i-m-032.webp", visible: 0, text: "Ship is disabled at %10 power only. Main engines off line, life support critical.", background: "back/10.jpg" },
+    { speaker: "Kirk", image: "MW-037.webp", visible: 0, text: "Open up a communication channel, main viewer.", background: "back/14.jpg" },
+    { speaker: " ", image: "back/nothing.png", visible: 0, text: "Hello? Is there anyone there? I have no visuals. My power is almost gone.", background: "back/kirk-screen1.jpg" },
+    { speaker: "Kirk", image: "MW-037.webp", visible: 0, text: "Spock!", background: "back/14.jpg" },
+    { speaker: "Spock", image: "i-m-095.webp", visible: 0, text: "James T Kirk.", background: "back/10.jpg" },
+    { speaker: "Young Kirk", image: "back/nothing.png", visible: 0, text: "Captain Garrovick is dead, and half the crew is gone. We need help. Is this the Enterprise? Captain Pike, its a miracle you arrived! I didn't know the Enterprise was in the Alpha Quadrant.", background: "back/kirk-screen2.jpg" },
+      ]
+    },
+
+    "choice_pike_or_kirk": {
+      type: "choice",
+      background: "back/kirk-screen2.jpg",
+      character: "",
+      choices: [
+        { text: "Lie and say you are Pike", next: "pike_path_start" },
+        { text: "Tell him you are Kirk", next: "kirk_path_start" },
+      ]
+    },
+
+    // ── PATH A: Lie about being Pike ──────────────────────────────────────
+    "pike_path_start": {
+      type: "dialog",
+      next: "choice_fault_A",
+      lines: [
+    { speaker: "Kirk", image: "MW-037.webp", visible: 0, text: "...yes, its Captain Pike! We heard your call, and", background: "back/14.jpg" },
+    { speaker: "Young Kirk", image: "back/nothing.png", visible: 0, text: "Captain, Its all my fault! I hesitated, and it got away! I did this.", background: "back/kirk-screen2.jpg" },
+    { speaker: "Kirk", image: "MW-037.webp", visible: 0, text: "...", background: "back/14.jpg" },
+    { speaker: "Young Kirk", image: "back/nothing.png", visible: 0, text: "Is it my fault? Is there anything I could have done differently?", background: "back/kirk-screen2.jpg" },
+      ]
+    },
+
+    // ── PATH B: Tell truth about being Kirk ───────────────────────────────
+    "kirk_path_start": {
+      type: "dialog",
+      next: "choice_fault_B",
+      lines: [
+    { speaker: "Kirk", image: "MW-037.webp", visible: 0, text: "...No, its not Captain Pike! Its complicated, but", background: "back/14.jpg" },
+    { speaker: "Young Kirk", image: "back/nothing.png", visible: 0, text: "Captain, Its all my fault! I hesitated, and it got away! I did this.", background: "back/kirk-screen2.jpg" },
+    { speaker: "Kirk", image: "MW-037.webp", visible: 0, text: "...", background: "back/14.jpg" },
+    { speaker: "Young Kirk", image: "back/nothing.png", visible: 0, text: "Is it my fault? Is there anything I could have done differently?", background: "back/kirk-screen2.jpg" },
+      ]
+    },
+
+    // ── CHOICE: Fault (from Pike path) ───────────────────────────────────
+    "choice_fault_A": {
+      type: "choice",
+      background: "back/kirk-screen2.jpg",
+      character: "",
+      choices: [
+        { text: "Say there was nothing he could have done", next: "reassure_young_kirk" },
+        { text: "Say he should have been more brave", next: "scold_young_kirk" },
+      ]
+    },
+
+    // ── CHOICE: Fault (from Kirk truth path) ─────────────────────────────
+    "choice_fault_B": {
+      type: "choice",
+      background: "back/kirk-screen2.jpg",
+      character: "",
+      choices: [
+        { text: "Say there was nothing he could have done", next: "reassure_young_kirk" },
+        { text: "Say he should have been more brave", next: "scold_young_kirk" },
+      ]
+    },
+
+    // ── Reassure path ─────────────────────────────────────────────────────
+    "reassure_young_kirk": {
+      type: "dialog",
+      next: "choice_starfleet_A",
+      lines: [
+    { speaker: "Kirk", image: "MW-037.webp", visible: 0, text: "Some scars make us who we need to be, Ensign. Never run from what makes you stronger.", background: "back/14.jpg" },
+    { speaker: "Young Kirk", image: "back/nothing.png", visible: 0, text: "Yes Sir. I have to try harder. I will, Sir.", background: "back/kirk-screen2.jpg" },
+    { speaker: "Kirk", image: "MW-037.webp", visible: 0, text: "...", background: "back/14.jpg" },
+    { speaker: "Young Kirk", image: "back/nothing.png", visible: 0, text: "So, I should stay in Starfleet? Do you think I may have a future in it?", background: "back/kirk-screen2.jpg" },
+      ]
+    },
+
+    // ── Scold path ────────────────────────────────────────────────────────
+    "scold_young_kirk": {
+      type: "dialog",
+      next: "choice_starfleet_B",
+      lines: [
+    { speaker: "Kirk", image: "MW-037.webp", visible: 0, text: " Hesitation costs lives, Mr Kirk, Never forget that fact.", background: "back/14.jpg" },
+    { speaker: "Young Kirk", image: "back/nothing.png", visible: 0, text: "Yes Sir. I have to try harder. I will, Sir.", background: "back/kirk-screen2.jpg" },
+    { speaker: "Kirk", image: "MW-037.webp", visible: 0, text: "...", background: "back/14.jpg" },
+    { speaker: "Young Kirk", image: "back/nothing.png", visible: 0, text: "So, I should stay in Starfleet? Do you think I may have a future in it?", background: "back/kirk-screen2.jpg" },
+      ]
+    },
+
+    "choice_starfleet_A": {
+      type: "choice",
+      background: "back/kirk-screen2.jpg",
+      character: "",
+      choices: [
+        { text: "Tell him to stay in Starfleet", next: "stay_starfleet" },
+        { text: "Tell him to leave Starfleet", next: "leave_starfleet" },
+      ]
+    },
+
+    "choice_starfleet_B": {
+      type: "choice",
+      background: "back/kirk-screen2.jpg",
+      character: "",
+      choices: [
+        { text: "Tell him to stay in Starfleet", next: "stay_starfleet" },
+        { text: "Tell him to leave Starfleet", next: "leave_starfleet" },
+      ]
+    },
+
+    // ── Stay in Starfleet ─────────────────────────────────────────────────
+    "stay_starfleet": {
+      type: "dialog",
+      next: "tralane_transition",
+      lines: [
+    { speaker: "Kirk", image: "MW-037.webp", visible: 0, text: "Ask yourself, if this is the path you want? It'll lead you into a frightening place...your future.", background: "back/14.jpg" },
+    { speaker: "Young Kirk", image: "back/nothing.png", visible: 0, text: " I'm not afraid.", background: "back/kirk-screen2.jpg" },
+    { speaker: "Kirk", image: "MW-037.webp", visible: 0, text: "...", background: "back/14.jpg" },
+    { speaker: "Young Kirk", image: "back/nothing.png", visible: 0, text: "Thank you, Captain. I have a journey ahead of me, but its OK.", background: "back/kirk-screen2.jpg" },
+      ]
+    },
+
+    // ── Leave Starfleet ───────────────────────────────────────────────────
+    "leave_starfleet": {
+      type: "dialog",
+      next: "tralane_transition",
+      lines: [
+    { speaker: "Kirk", image: "MW-037.webp", visible: 0, text: "If you have to ask me if this is in your heart, it probably isn't, Mr Kirk.", background: "back/14.jpg" },
+    { speaker: "Young Kirk", image: "back/nothing.png", visible: 0, text: "I understand, Sir.", background: "back/kirk-screen2.jpg" },
+    { speaker: "Kirk", image: "MW-037.webp", visible: 0, text: "...", background: "back/14.jpg" },
+    { speaker: "Young Kirk", image: "back/nothing.png", visible: 0, text: "My trek should end, before I do more harm.", background: "back/kirk-screen2.jpg" },
+      ]
+    },
+
+    // ── ACT 3: Tralane's tantrum / jump to future ─────────────────────────
+    "tralane_transition": {
+      type: "dialog",
+      next: "ending",
+      lines: [
+    { speaker: "Tralane", image: "trelane.webp", visible: 0, text: "No, no no...Its all wrong! Youre not learning. Captain, you've completely missed the POINT of all this.", background: "back/08.jpg" },
+    { speaker: "Kirk", image: "MW-037.webp", visible: 0, text: "There IS no point of this game, Tralane! I know what you are, and you're a child. Now, don't make me turn you over my knee, and spank you.", background: "back/14.jpg" },
+    { speaker: "Spock", image: "i-m-095.webp", visible: 0, text: " ", background: "back/10.jpg" },
+    { speaker: "Tralane", image: "trelane6.webp", visible: 0, text: "CAPTAIN KIRK! Please, I know what you're trying to do, and its not going to work.", background: "back/08.jpg" },
+    { speaker: "Tralane", image: "trelane5.webp", visible: 0, text: "The past didn't show you the truth, so perhaps the future...", background: "back/08.jpg" },
+    { speaker: "Kirk", image: "MW-597.webp", visible: 0, text: "No. Stop this", background: "back/14.jpg" },
+    { speaker: "Tralane", image: "trelane10.webp", visible: 0, text: "Too late!", background: "back/08.jpg" },
+    { speaker: "Picard", image: "picard2.webp", visible: 0, text: "Really, Doctor! I don't see why", background: "back/bridge1.jpg" },
+    { speaker: "Doctor", image: "picard1.webp", visible: 0, text: "YES! Thats my point. You DON'T see." },
+    { speaker: "Worf", image: "worf1.webp", visible: 0, text: "CAPTAIN! A Federaton vessel has just appeared in front of us.", background: "back/bridge2.jpg" },
+    { speaker: "Picard", image: "picard4.webp", visible: 0, text: "Doctor, it appears we have guests.", background: "back/bridge1b.jpg" },
+    { speaker: "Data", image: "data02.webp", visible: 0, text: "Fasinating.", background: "back/bridge1b.jpg" },
+    { speaker: "Doctor", image: "blank/nothing.webp", visible: 0, text: "Its the Enterprise!", background: "back/bridge3.jpg" },
+      ]
+    },
+
+    "ending": { type: "redirect", url: "game3.html" },
+  };
+
+  // ─────────────────────────────────────────────
+  //  ENGINE
+  // ─────────────────────────────────────────────
+
+  const bgImg        = document.getElementById('background');
+  const charImg      = document.getElementById('character');
+  const dialogText   = document.getElementById('dialogText');
+  const nextBtn      = document.getElementById('nextBtn');
+  const dialogUI     = document.getElementById('dialog-and-button-container');
+  const choiceUI     = document.getElementById('choice-container');
+
+  let currentScene = null;
+  let currentLineIndex = 0;
+  let currentBg   = "";
+  let currentChar = "";
+
+  document.querySelectorAll('.frame img').forEach(img =>
+    img.addEventListener('dragstart', e => e.preventDefault())
+  );
+
+  function setBackground(src) {
+    if (src && src !== currentBg) {
+      bgImg.src = src;
+      currentBg = src;
+    }
+  }
+
+  function setCharacter(src) {
+    if (src === undefined) return; // keep whatever is showing
+    if (src === currentChar) return;
+    charImg.style.opacity = '0';
+    setTimeout(() => {
+      charImg.src = src || '';
+      currentChar = src;
+      if (src) {
+        setTimeout(() => { charImg.style.opacity = '1'; }, 150);
+      }
+    }, 300);
+  }
+
+  function goToScene(id) {
+    const scene = SCENES[id];
+    if (!scene) { console.warn("Missing scene:", id); return; }
+    currentScene = scene;
+    currentLineIndex = 0;
+
+    if (scene.type === "dialog") {
+      showDialogMode();
+      showLine(0);
+    } else if (scene.type === "choice") {
+      showChoiceMode(scene);
+    } else if (scene.type === "redirect") {
+      location.href = scene.url;
+    }
+  }
+
+  // ── Dialog mode ────────────────────────────────
+  function showDialogMode() {
+    dialogUI.style.display = 'flex';
+    choiceUI.style.display = 'none';
+  }
+
+  function showLine(index) {
+    const scene = currentScene;
+    if (index >= scene.lines.length) {
+      goToScene(scene.next);
+      return;
+    }
+    const line = scene.lines[index];
+    setBackground(line.background);
+    setCharacter(line.image);
+    dialogText.innerHTML = `<strong>${line.speaker}</strong><br>${line.text}`;
+  }
+
+  nextBtn.addEventListener('click', () => {
+    currentLineIndex++;
+    showLine(currentLineIndex);
+  });
+
+  // ── Choice mode ────────────────────────────────
+  function showChoiceMode(scene) {
+    dialogUI.style.display = 'none';
+    choiceUI.style.display = 'flex';
+    setBackground(scene.background);
+    setCharacter(scene.character !== undefined ? scene.character : '');
+
+    choiceUI.innerHTML = '';
+    scene.choices.forEach(choice => {
+      const box = document.createElement('div');
+      box.className = 'choice-box';
+      box.innerHTML = `<div class="choice-text">${choice.text}</div>`;
+      box.addEventListener('click', () => goToScene(choice.next));
+      choiceUI.appendChild(box);
+    });
+  }
+
+  // ── Start ──────────────────────────────────────
+  function startGame() {
+    currentBg = '';
+    currentChar = '';
+    goToScene('intro');
+  }
+
+  startGame();
+</script>
+</body>
+</html>

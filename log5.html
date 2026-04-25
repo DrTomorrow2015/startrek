@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Captain's Log Intro</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #starfield {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 300%;
+      height: 100%;
+      background: black url('back/planet.png') repeat-x;
+      animation: scrollStars 200s linear infinite;
+      z-index: -1;
+    }
+
+    @keyframes scrollStars {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-66.66%); }
+    }
+
+    #ship {
+      position: absolute;
+      top: 40%;
+      left: -20%; /* Start off-screen to the left */
+      transform: translateY(-50%); /* Center vertically */
+      max-height: 40%;
+      z-index: 1;
+      animation: moveShip 50s linear forwards; /* Animation for the ship */
+    }
+
+    @keyframes moveShip {
+      0% { left: -20%; }
+      100% { left: 100%; } /* Move completely off-screen to the right */
+    }
+
+    #logbox {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 20px;
+      box-sizing: border-box;
+      text-align: center;
+      font-size: 18px;
+      line-height: 1.4em;
+      border-top: 1px solid #444;
+      color: white; /* Retain white text for logbox content */
+      font-family: sans-serif; /* Retain sans-serif for logbox content */
+    }
+
+    #continue-button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #0ff;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #continue-button:hover {
+      background: #0cc;
+    }
+  </style>
+</head>
+<body>
+  <div id="starfield"></div>
+  <img id="ship" src="ships/ship7.png" alt="Starship" />
+
+  <div id="logbox">
+    <div>
+      <strong>Captain's Log.</strong><br>
+Transporting down to surface of planet Rigel 12 to acquire replacement lithium crystals. Expect further difficulty from miners.
+    </div>
+    <button id="continue-button" onclick="location.href='MW-16.html'">Continue</button>
+  </div>
+</body>
+</html>

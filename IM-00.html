@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>I, Mudd</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+      color: white;
+      background: #000;
+    }
+
+    /* ── SCENE (dialog pages) ── */
+    #scene-view {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .scene-container {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .frame {
+      position: relative;
+      width: 100%; height: 100%;
+      max-width: 100vw;
+      max-height: calc(100vw * 450 / 900);
+      overflow: hidden;
+      background: #000;
+    }
+
+    @media (min-aspect-ratio: 900/450) {
+      .frame {
+        max-width: calc(100vh * 900 / 450);
+        max-height: 100vh;
+      }
+    }
+
+    .frame img {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
+
+    .background { z-index: 1; }
+    .character  { bottom: 200px; z-index: 2; object-fit: contain; }
+
+    #dialog-and-button-container {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: flex-end;
+      max-width: 1800px;
+      width: 95%;
+      z-index: 10;
+    }
+
+    #logbox {
+      position: static;
+      transform: none;
+      width: auto;
+      max-width: none;
+      padding: 15px 10px;
+      border-radius: 15px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      backdrop-filter: blur(10px);
+      border: 2px solid #666;
+      box-sizing: border-box;
+      z-index: 10;
+      flex-grow: 1;
+      min-height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dialog-text {
+      max-width: 100%;
+      margin: 0 auto;
+      font-size: clamp(14px, 2vw, 18px);
+      line-height: 1.4em;
+      text-align: center;
+      white-space: pre-wrap;
+      padding: 10px 0;
+    }
+
+    .buttons-container {
+      margin-left: 10px;
+      flex-shrink: 0;
+    }
+
+    .image-btn {
+      cursor: pointer;
+      width: clamp(50px, 7vw, 70px);
+      height: clamp(64px, 9vw, 90px);
+      border: none;
+      background: transparent;
+      padding: 0;
+      transform: translateY(-5px);
+    }
+
+    .image-btn:hover { opacity: 0.8; }
+
+    @media (max-width: 768px) {
+      #dialog-and-button-container { width: 98%; align-items: center; }
+      #logbox { padding: 15px 10px; min-height: 70px; }
+      .buttons-container { margin-left: 5px; }
+      .image-btn { transform: translateY(0); }
+    }
+
+    /* ── INTERSTITIAL (IM-02 style) ── */
+    #interstitial-view {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 100;
+    }
+
+    .background-tile {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-image: url('back/blank4.png');
+      background-repeat: repeat;
+      background-size: auto;
+      z-index: -1;
+    }
+
+    .content-container {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 800px; height: 400px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .main-image  { max-width: 400%; max-height: 400%; display: block; }
+
+    .animated-gif {
+      position: absolute;
+      top: 42%; left: 48%;
+      transform: translate(-50%, -50%) scale(2);
+      width: 169px; height: 166px;
+      max-width: 70%; height: auto;
+      opacity: 0.35;
+    }
+
+    /* ── CAPTAIN'S LOG (log01 style) ── */
+    #log-view {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      overflow: hidden;
+      z-index: 100;
+      color: white;
+      font-family: sans-serif;
+    }
+
+    #starfield {
+      position: fixed;
+      top: 0; left: 0;
+      width: 300%; height: 100%;
+      background: black url('back/planet-d.jpg') repeat-x;
+      animation: scrollStars 60000s linear infinite;
+      z-index: -1;
+    }
+
+    @keyframes scrollStars {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-66.66%); }
+    }
+
+    #ship {
+      position: absolute;
+      top: 40%; left: 50%;
+      transform: translate(-50%, -50%);
+      max-height: 40%;
+      z-index: 1;
+    }
+
+    #log-logbox {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      background: rgba(0,0,0,0.7);
+      padding: 20px;
+      box-sizing: border-box;
+      text-align: center;
+      font-size: 18px;
+      line-height: 1.4em;
+      border-top: 1px solid #444;
+      z-index: 2;
+    }
+
+    #continue-button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #0ff;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #continue-button:hover { background: #0cc; }
+
+    /* ── TRANSPORTER (tport-imud style) ── */
+    #transport-view {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: url('back/galor1.jpg') no-repeat center center / cover;
+      z-index: 100;
+      display: none;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .beam-container {
+      position: relative;
+      width: 100%;
+      max-width: 800px;
+      height: 600px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .beam-gif, .crew-image {
+      position: absolute;
+      max-width: 100%; max-height: 100%;
+      object-fit: contain;
+      opacity: 0;
+      top: 170px; left: 60px;
+      transform: translate(0,0);
+    }
+
+    .beam-gif  { animation: fadeInBeam 2s ease-in-out forwards; }
+    .crew-image { animation: showCrew 1s ease-in-out 3s forwards; }
+
+    @keyframes fadeInBeam {
+      0%   { opacity: 0; }
+      50%  { opacity: 1; }
+      100% { opacity: 1; }
+    }
+    @keyframes showCrew {
+      0%   { opacity: 0; }
+      100% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════
+       SCENE VIEW  (IM-00, IM-01, IM-03, IM-04)
+       ══════════════════════════════════════ -->
+  <div id="scene-view">
+    <div class="scene-container">
+      <div class="frame" id="sceneFrame">
+        <img id="background" class="background" alt="Background" src="back/14.jpg" />
+        <img id="character"  class="character"  alt="Character" />
+      </div>
+    </div>
+    <div id="dialog-and-button-container">
+      <div id="logbox">
+        <div class="dialog-text" id="dialogText"></div>
+      </div>
+      <div class="buttons-container">
+        <img src="TOS-Badge.webp" alt="Next" class="image-btn" id="nextBtn" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       INTERSTITIAL VIEW  (IM-02)
+       ══════════════════════════════════════ -->
+  <div id="interstitial-view">
+    <div class="background-tile">
+      <div class="content-container">
+        <img src="back/droid.jpg"  alt="Main Image"   class="main-image" />
+        <img src="back/d3.gif"     alt="Animated GIF" class="animated-gif" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       CAPTAIN'S LOG VIEW  (log01)
+       ══════════════════════════════════════ -->
+  <div id="log-view">
+    <div id="starfield"></div>
+    <img id="ship" src="ships/enterprise-7.png" alt="Starship" />
+    <div id="log-logbox">
+      <div>
+        <strong>Captain's log. Stardate 4513.3.</strong><br>
+        After having been taken over by an android, the Enterprise has been under way at warp seven for four days.
+        Now we are entering orbit around a planet which has never been charted.
+      </div>
+      <button id="continue-button">Continue</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       TRANSPORTER VIEW  (tport-imud)
+       ══════════════════════════════════════ -->
+  <div id="transport-view">
+    <div class="beam-container">
+      <img src="back/beam-in2.gif" alt="Beaming Effect" class="beam-gif" />
+      <img src="back/Scre0.png"    alt="Crew"           class="crew-image" />
+    </div>
+  </div>
+
+<script>
+  // ── All dialog sequences ──────────────────────────────────────────────────
+
+  const sequences = {
+    im00: [
+      { speaker: "Norman", image: "i-m-000.webp", text: " ",                     background: "back/hall3.jpg" },
+      { speaker: "Norman", image: "i-m-001.webp", text: "Good morning, Mr. Spock, Doctor." },
+      { speaker: "Bones",  image: "i-m-002.webp", text: " " },
+      { speaker: "Spock",  image: "i-m-003.webp", text: "Something wrong?" },
+      { speaker: "Bones",  image: "i-m-004.webp", text: "Yes. There's something odd about that man, and I can't quite pinpoint it." },
+      { speaker: "Spock",  image: "i-m-005.webp", text: "Perhaps you're making a rather hasty judgment. Mister Norman has only been aboard seventy two hours." },
+      { speaker: "Bones",  image: "i-m-006.webp", text: "I know when something doesn't strike me right, and he doesn't." },
+      { speaker: "Spock",  image: "i-m-007.webp", text: "Specifics, Doctor. Labels do not make arguments." },
+      { speaker: "Bones",  image: "i-m-006.webp", text: "All right. There's something wrong about a man who never smiles." },
+      { speaker: "Bones",  image: "i-m-007.webp", text: "Whose conversation never varies from the routine of the job, and who won't talk about his background." },
+      { speaker: "Spock",  image: "i-m-008.webp", text: "I see" },
+      { speaker: "Bones",  image: "i-m-006.webp", text: "Spock, I mean that it's odd for a non-Vulcan. The ears make all the difference." },
+      { speaker: "Spock",  image: "i-m-008.webp", text: "I find your argument strewn with gaping defects in logic." },
+      { speaker: "Bones",  image: "i-m-006.webp", text: "Maybe, but you can't evaluate a man by logic alone. " },
+      { speaker: "Bones",  image: "i-m-007.webp", text: "Besides, he has avoided two appointments that I've made for his physical exam without reason." },
+      { speaker: "Spock",  image: "i-m-008.webp", text: "That's not at all surprising, Doctor. He's probably terrified of your beads and rattles." },
+      { speaker: "Norman", image: "i-m-009.webp", text: " ",                     background: "back/engineering6.jpg" },
+      { speaker: "Jordan", image: "i-m-010.webp", text: " ",                     background: "back/engineering1.jpg" },
+      { speaker: "Norman", image: "i-m-011.webp", text: "Command personnel only." },
+      { speaker: "Jordan", image: "i-m-012.webp", text: "NO! ..stop.." },
+      { speaker: "Norman", image: "i-m-013.webp", text: " " },
+      { speaker: "Norman", image: "i-m-014.webp", text: " " },
+      { speaker: "Norman", image: "i-m-015.webp", text: " ",                     background: "back/engineering7.jpg" },
+      { speaker: " ",      image: "back/nothing.webp", text: " ",                background: "back/overload.jpg" },
+      { speaker: "Kirk",   image: "i-m-017.webp", text: "Yes, Mister Sulu?",     background: "back/13.jpg" },
+      { speaker: "Sulu",   image: "i-m-018.webp", text: "There's an unplanned course change being fed into the instruments, sir." },
+      { speaker: "Kirk",   image: "i-m-019.webp", text: "Correct it.",            background: "back/14.jpg" },
+      { speaker: "Sulu",   image: "i-m-020.webp", text: "I can't, sir.",          background: "back/13.jpg" },
+      { speaker: "Kirk",   image: "i-m-021.webp", text: "Auxiliary control, this is the captain. Auxiliary control, what's going on down there?", background: "back/14.jpg" },
+      { speaker: "Sulu",   image: "i-m-026.webp", text: "Sir, auxiliary control is on total override.", background: "back/11.jpg" },
+      { speaker: "Kirk",   image: "i-m-023.webp", text: "Kirk to Security.",      background: "back/14.jpg" },
+      { speaker: "Rowe",   image: "i-m-030.webp", text: "Security. Lieutenant Rowe here, sir.", background: "back/hall5.jpg" },
+      { speaker: "Kirk",   image: "i-m-023.webp", text: "Intruder alert, deck eight, auxiliary control.", background: "back/14.jpg" },
+      { speaker: "Rowe",   image: "i-m-030.webp", text: "Acknowledged.",          background: "back/hall5.jpg" },
+      { speaker: "Kirk",   image: "i-m-028.webp", text: "Lieutenant Uhura, have Mister Spock report to the bridge.", background: "back/13.jpg" },
+      { speaker: "Kirk",   image: "i-m-026.webp", text: "What's the imposed course, Mister Sulu?", background: "back/11.jpg" },
+      { speaker: "Sulu",   image: "i-m-025.webp", text: "Turning on three oh seven degrees, mark eight. Being executed now, sir." },
+      { speaker: "Rowe",   image: "i-m-031.webp", text: " ",                     background: "back/engineering1.jpg" },
+      { speaker: "Rowe",   image: "i-m-022.webp", text: "Lieutenant Rowe, sir. I'm in auxiliary control. Ensign Jordan's been knocked out." },
+      { speaker: "Rowe",   image: "i-m-024.webp", text: "The directional master controls have been jammed. They're totally unworkable." },
+      { speaker: "Kirk",   image: "i-m-027.webp", text: "Any sign of the intruder?", background: "back/14.jpg" },
+      { speaker: "Rowe",   image: "i-m-024.webp", text: "No, sir. He's gone. I've put out a full security alert on all decks.", background: "back/engineering1.jpg" },
+      { speaker: "Kirk",   image: "i-m-027.webp", text: "Find him. Kirk out.",    background: "back/14.jpg" },
+      { speaker: "Kirk",   image: "i-m-023.webp", text: "Mister Spock, we seem to be taking an unscheduled ride." },
+    ],
+
+    im01: [
+      { speaker: "Spock",  image: "i-m-032.webp", text: "Interesting.",            background: "back/10.jpg" },
+      { speaker: "Kirk",   image: "i-m-029.webp", text: "Mister Sulu, cut in emergency manual monitor. I want the override broken.", background: "back/13.jpg" },
+      { speaker: "Sulu",   image: "i-m-025.webp", text: "Sir, the instruments won't respond.", background: "back/11.jpg" },
+      { speaker: "Kirk",   image: "i-m-039.webp", text: "Emergency manual monitor, report.", background: "back/14.jpg" },
+      { speaker: "Kirk",   image: "i-m-027.webp", text: "This is Captain Kirk. Acknowledge." },
+      { speaker: "Kirk",   image: "i-m-039.webp", text: "Emergency manual monitor, this is the captain. Report." },
+      { speaker: "Scott",  image: "i-m-035.webp", text: "Here, you're not allowed—", background: "back/engineering5.jpg" },
+      { speaker: "Norman", image: "i-m-036.webp", text: " " },
+      { speaker: "Norman", image: "i-m-037.webp", text: " " },
+      { speaker: "Norman", image: "i-m-038.webp", text: " " },
+      { speaker: "Kirk",   image: "i-m-083.webp", text: "Acknowledge. This is the captain. Scotty, acknowledge.", background: "back/14.jpg" },
+      { speaker: "Kirk",   image: "i-m-054.webp", text: "Scotty, what's going on down there?" },
+      { speaker: "Kirk",   image: "i-m-066.webp", text: "Kirk to Engineering.",    background: "back/14.jpg" },
+      { speaker: "Kirk",   image: "i-m-070.webp", text: "This is the captain. Scotty, report." },
+      { speaker: "Norman", image: "i-m-080.webp", text: " ",                     background: "back/engineering9.jpg" },
+      { speaker: "Norman", image: "i-m-079.webp", text: " ",                     background: "back/engineering9.jpg" },
+      { speaker: "Kirk",   image: "i-m-083.webp", text: "Scotty, the intruder is in your area.", background: "back/14.jpg" },
+      { speaker: "Kirk",   image: "i-m-087.webp", text: "What's going on down there? Scotty!" },
+      { speaker: "Scott",  image: "i-m-081.webp", text: "Captain, he's here.",    background: "back/engineering3.jpg" },
+      { speaker: "Kirk",   image: "i-m-040.webp", text: "Scotty." },
+      { speaker: "Kirk",   image: "i-m-070.webp", text: "Scotty?",                background: "back/14.jpg" },
+      { speaker: "Kirk",   image: "i-m-070.webp", text: "Security, the intruder is in the engineering section. Have all units converge on that point." },
+      { speaker: "Sulu",   image: "i-m-091.webp", text: "Sir, we're picking up speed. Warp five, six. Warp seven, sir.", background: "back/13.jpg" },
+      { speaker: "Kirk",   image: "i-m-070.webp", text: "Cut power.",             background: "back/14.jpg" },
+      { speaker: "Sulu",   image: "i-m-091.webp", text: "I can't, sir. All the controls are jammed.", background: "back/13.jpg" },
+      { speaker: "Kirk",   image: "i-m-083.webp", text: "Spock, take over.",      background: "back/14.jpg" },
+      { speaker: "Norman", image: "i-m-093.webp", text: "It will not be necessary, Captain.", background: "back/11.jpg" },
+      { speaker: "Kirk",   image: "i-m-096.webp", text: "Tell Security we've found the intruder.", background: "back/16.jpg" },
+      { speaker: "Kirk",   image: "i-m-099.webp", text: "Do you mind telling me what this is all about, mister?", background: "back/16.jpg" },
+      { speaker: "Norman", image: "i-m-100.webp", text: "I am in total control of your ship." },
+      { speaker: "Norman", image: "i-m-099.webp", text: "I have connected the matter-antimatter pods to the main navigational bank." },
+      { speaker: "Norman", image: "i-m-095.webp", text: "A trigger relay is now in operation.", background: "back/10.jpg" },
+      { speaker: "Norman", image: "i-m-105.webp", text: "Any attempts to alter course will result in immediate destruction of this vessel.", background: "back/16.jpg" },
+      { speaker: "Kirk",   image: "i-m-101.webp", text: "Spock?" },
+      { speaker: "Spock",  image: "i-m-104.webp", text: "Confirmed, Captain. He's taken out all the override controls." },
+      { speaker: "Spock",  image: "i-m-106.webp", text: "If we tamper without knowing where the trigger relay is, we could extinguish ourselves." },
+      { speaker: "Kirk",   image: "i-m-111.webp", text: "Who are you?" },
+      { speaker: "Norman", image: "i-m-122.webp", text: "I assure you we are no threat to humanity or humanoid life." },
+      { speaker: "Norman", image: "i-m-100.webp", text: "We mean you no harm, but we require your ship." },
+      { speaker: "Kirk",   image: "i-m-118.webp", text: "You require? Who and what are we?" },
+    ],
+
+    im03: [
+      { speaker: "Kirk",   image: "i-m-111.webp", text: "An android.",            background: "back/16.jpg" },
+      { speaker: "Spock",  image: "i-m-118.webp", text: "And most sophisticated." },
+      { speaker: "Norman", image: "i-m-122.webp", text: "I control the trigger relay, sir. ", background: "back/18.jpg" },
+      { speaker: "Norman", image: "i-m-100.webp", text: "I cannot be overcome by physical means, and if you attempt to use your phasers, the trigger relay will be activated." },
+      { speaker: "Norman", image: "i-m-122.webp", text: "We shall continue on our present course for approximately four solar days, at which time we shall arrive at our destination." },
+      { speaker: "Kirk",   image: "i-m-128.webp", text: "Who sent you?",          background: "back/16.jpg" },
+      { speaker: "Norman", image: "i-m-100.webp", text: "I am not programmed to respond in that area.", background: "back/18.jpg" },
+      { speaker: "Spock",  image: "i-m-126.webp", text: "He simply appears to have turned himself off, Captain.", background: "back/17.jpg" },
+      { speaker: "Spock",  image: "i-m-126.webp", text: "And since we cannot repair the damage he has done without destroying the ship" },
+      { speaker: "Kirk",   image: "i-m-130.webp", text: "It seems we're going to take a little trip." },
+    ],
+
+    im04: [
+      { speaker: "Norman", image: "i-m-133.webp", text: " ",                     background: "back/17.jpg" },
+      { speaker: "Norman", image: "i-m-134.webp", text: " ",                     background: "back/17.jpg" },
+      { speaker: "Norman", image: "i-m-139.webp", text: " ",                     background: "back/18.jpg" },
+      { speaker: "Norman", image: "i-m-140.webp", text: "Captain Kirk. The following individuals will be transported down to our planet.", background: "back/12.jpg" },
+      { speaker: "Norman", image: "i-m-144.webp", text: "Yourself, science officer, medical officer, communications officer and navigator.", background: "back/10.jpg" },
+      { speaker: "Kirk",   image: "i-m-146.webp", text: "Any meetings or discussions can be held aboard the Enterprise.", background: "back/16.jpg" },
+      { speaker: "Norman", image: "i-m-149.webp", text: "If you do not come with me, your engines will be destroyed and you will remain in orbit here forever.", background: "back/18.jpg" },
+      { speaker: "Kirk",   image: "i-m-146.webp", text: "I must say that's a gracious invitation.", background: "back/16.jpg" },
+      { speaker: "Norman", image: "i-m-149.webp", text: "There is a word. Among us there is no corresponding meaning, but it seems to mean something to you humans.", background: "back/18.jpg" },
+      { speaker: "Kirk",   image: "i-m-146.webp", text: "And what is that word?", background: "back/16.jpg" },
+      { speaker: "Norman", image: "i-m-149.webp", text: "Please.",                background: "back/18.jpg" },
+    ],
+  };
+
+  // ── State ─────────────────────────────────────────────────────────────────
+
+  // Page order
+  const PAGE_ORDER = ['im00', 'im01', 'interstitial', 'im03', 'log', 'im04', 'transport'];
+  let currentPage = 'im00';
+  let currentIndex = 0;
+
+  // ── Elements ──────────────────────────────────────────────────────────────
+
+  const sceneView       = document.getElementById('scene-view');
+  const interstitialView= document.getElementById('interstitial-view');
+  const logView         = document.getElementById('log-view');
+  const transportView   = document.getElementById('transport-view');
+
+  const backgroundImg = document.getElementById('background');
+  const characterImg  = document.getElementById('character');
+  const dialogText    = document.getElementById('dialogText');
+  const nextBtn       = document.getElementById('nextBtn');
+
+  // ── View switching ────────────────────────────────────────────────────────
+
+  function showView(name) {
+    sceneView.style.display        = 'none';
+    interstitialView.style.display = 'none';
+    logView.style.display          = 'none';
+    transportView.style.display    = 'none';
+
+    if (name === 'scene') {
+      sceneView.style.display = 'block';
+    } else if (name === 'interstitial') {
+      interstitialView.style.display = 'block';
+    } else if (name === 'log') {
+      logView.style.display = 'block';
+    } else if (name === 'transport') {
+      transportView.style.display = 'flex';
+    }
+  }
+
+  // ── Scene dialog ──────────────────────────────────────────────────────────
+
+  function showDialog(seq, index) {
+    if (index >= seq.length) {
+      advancePage();
+      return;
+    }
+    const d = seq[index];
+
+    if (d.background) backgroundImg.src = d.background;
+
+    characterImg.style.opacity = '0';
+    setTimeout(() => {
+      characterImg.src = d.image;
+      dialogText.innerHTML = `<strong>${d.speaker}</strong><br>${d.text}`;
+      if (!d.image.includes('nothing.webp')) {
+        setTimeout(() => { characterImg.style.opacity = '1'; }, 150);
+      }
+    }, 300);
+  }
+
+  // ── Page advancement ──────────────────────────────────────────────────────
+
+  function advancePage() {
+    const idx = PAGE_ORDER.indexOf(currentPage);
+    if (idx === -1 || idx === PAGE_ORDER.length - 1) return; // end of story
+    currentPage = PAGE_ORDER[idx + 1];
+    currentIndex = 0;
+    loadPage(currentPage);
+  }
+
+  function loadPage(page) {
+    if (page === 'im00' || page === 'im01' || page === 'im03' || page === 'im04') {
+      showView('scene');
+      showDialog(sequences[page], 0);
+    } else if (page === 'interstitial') {
+      showView('interstitial');
+      // Auto-advance after 4 s (matching original IM-02)
+      setTimeout(advancePage, 4000);
+    } else if (page === 'log') {
+      showView('log');
+      // Continue button triggers advance
+    } else if (page === 'transport') {
+      showView('transport');
+      // Restart beam animations by replacing elements
+      restartBeamAnimations();
+      setTimeout(function() {
+        // End of story — redirect to IM-05.html (not included in this file)
+        window.location.href = 'IM-05.html';
+      }, 3500);
+    }
+  }
+
+  function restartBeamAnimations() {
+    const container = transportView.querySelector('.beam-container');
+    // Clone to restart CSS animations
+    const clone = container.cloneNode(true);
+    container.parentNode.replaceChild(clone, container);
+  }
+
+  // ── Button / interaction wiring ───────────────────────────────────────────
+
+  nextBtn.addEventListener('click', () => {
+    currentIndex++;
+    showDialog(sequences[currentPage], currentIndex);
+  });
+
+  document.getElementById('continue-button').addEventListener('click', advancePage);
+
+  // ── Prevent image dragging ────────────────────────────────────────────────
+
+  document.querySelectorAll('img').forEach(img => {
+    img.addEventListener('dragstart', e => e.preventDefault());
+  });
+
+  // ── Kick off ──────────────────────────────────────────────────────────────
+  loadPage('im00');
+</script>
+
+</body>
+</html>

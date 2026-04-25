@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>13</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+      color: white;
+      background: #000;
+    }
+
+    /* Main container centers everything */
+    .scene-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* The frame maintains 900:450 aspect ratio and scales to fit screen */
+    .frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 100vw;
+      max-height: calc(100vw * 450 / 900); /* Maintain aspect ratio based on width */
+      overflow: hidden;
+      background: #000;
+    }
+
+    /* Alternative constraint: if height is limiting factor */
+    @media (min-aspect-ratio: 900/450) {
+      .frame {
+        max-width: calc(100vh * 900 / 450);
+        max-height: 100vh;
+      }
+    }
+
+    /* All images fill the frame and scale together */
+    .frame img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
+
+    /* Layer ordering */
+    .background {
+      z-index: 1;
+    }
+    
+    .character {
+      bottom: 200px;
+      z-index: 2;
+      object-fit: contain; /* Keep character proportions */
+    }
+
+    /* New container to group dialog box and button, and center them both */
+    #dialog-and-button-container {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      /* Centers the combined width */
+      transform: translateX(-50%); 
+      display: flex;
+      /* Align to the bottom of the logbox (fixes vertical position) */
+      align-items: flex-end; 
+      max-width: 1800px; /* INCREASED: Very wide limit for large screens */
+      width: 95%; /* Use 95% to ensure spacing on wide screens */
+      z-index: 10;
+    }
+
+    /* Dialog box - will now grow to fill space */
+    #logbox {
+      position: static; 
+      transform: none; 
+      width: auto; 
+      max-width: none; /* NEW: Removed fixed width constraint for maximum expansion */
+      padding: 15px 10px; 
+      border-radius: 15px;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      backdrop-filter: blur(10px);
+      border: 2px solid #666;
+      box-sizing: border-box;
+      z-index: 10;
+      flex-grow: 1; /* This makes it take all space available after button space is used */
+      min-height: 90px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+    }
+
+    .dialog-text {
+      max-width: 100%; 
+      margin: 0 auto;
+      font-size: clamp(14px, 2vw, 18px); 
+      line-height: 1.4em;
+      text-align: center;
+      margin-bottom: 0; 
+      white-space: pre-wrap; 
+      padding: 10px 0; 
+    }
+
+    /* Buttons container - OUTSIDE logbox, aligned right next to it */
+    .buttons-container {
+      margin-top: 0; 
+      text-align: left; 
+      padding-right: 0;
+      margin-left: 10px; /* Space between dialog and button */
+      margin-bottom: 0;
+      flex-shrink: 0; 
+    }
+
+    .image-btn {
+      cursor: pointer;
+      width: clamp(50px, 7vw, 70px); 
+      height: clamp(64px, 9vw, 90px);
+      border: none;
+      background: transparent;
+      padding: 0;
+      /* Adjusted to align button visually with the text box */
+      transform: translateY(-5px); 
+    }
+
+    .image-btn:hover {
+      opacity: 0.8;
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 768px) {
+      #dialog-and-button-container {
+        width: 98%; 
+        align-items: center; 
+      }
+      
+      #logbox {
+        padding: 15px 10px;
+        max-width: 100%; 
+        min-height: 70px; 
+      }
+      
+      .buttons-container {
+        margin-left: 5px;
+      }
+
+      .image-btn {
+        transform: translateY(0); 
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene-container">
+    <div class="frame" id="sceneFrame">
+      <img id="background" class="background" alt="Background" src="back/14.jpg" />
+      <img id="character" class="character" alt="Character" />
+    </div>
+  </div>
+  
+  <div id="dialog-and-button-container">
+    <div id="logbox">
+      <div class="dialog-text" id="dialogText"></div>
+    </div>
+    <div class="buttons-container">
+      <img src="TOS-Badge.webp" alt="Next" class="image-btn" id="nextBtn" />
+    </div>
+  </div>
+
+<script>
+  const backgroundImg = document.getElementById('background');
+  const characterImg = document.getElementById('character');
+  const dialogText = document.getElementById('dialogText');
+  const nextBtn = document.getElementById('nextBtn');
+
+  const dialogSequence = [
+    { speaker: "Ruth", image: "MW-348.webp", visible: 0, text: "I wondered, will you be examining the miners on Rigel 12?.", background: "back/sickbay4.jpg" },
+    { speaker: "McCoy", image: "MW-328.webp", visible: 0, text: "Yes, if they need it." },
+    { speaker: "Ruth", image: "MW-342.webp", visible: 0, text: "You haven't asked yet? Are they in good health and all?" },
+    { speaker: "McCoy", image: "MW-338.webp", visible: 0, text: "What? Oh, yes, they're in excellent health, all three of them." },
+    { speaker: "Ruth", image: "MW-350.webp", visible: 0, text: "Oh. Three." },
+    { speaker: "McCoy", image: "MW-351.webp", visible: 0, text: "Are you wearing some unusual kind of perfume or something radioactive, my dear?" },
+    { speaker: "Ruth", image: "MW-353.webp", visible: 0, text: "No. I'm just me." },
+    { speaker: "Eve", image: "MW-374b.webp", visible: 0, text: "Captain? I hope you don't mind.", background: "back/quarters6.jpg" },
+    { speaker: "Kirk", image: "MW-363b.webp", visible: 0, text: "As a matter of fact, Miss McHuron, I do.", background: "back/quarters7.jpg" },
+    { speaker: "Eve", image: "MW-374b.webp", visible: 0, text: "I was trying to take a walk, and I just, I just had to run in someplace. You see, all your men were looking at me, following me with their eyes.", background: "back/quarters6.jpg" },
+    { speaker: "Kirk", image: "MW-363b.webp", visible: 0, text: "Yes. I'll have to talk to them about that. They, er, they don't do that ordinarily, Miss McHuron, but somehow, in your case, and the ladies with you, its, er", background: "back/quarters7.jpg" },
+    { speaker: "Eve", image: "MW-374.webp", visible: 0, text: "They're probably just lonely. I can understand loneliness.", background: "back/quarters6.jpg" },
+    { speaker: "Kirk", image: "MW-363.webp", visible: 0, text: "Yes. Yes, er, now, Miss McHuron", background: "back/quarters7.jpg" },
+    { speaker: "Eve", image: "MW-374.webp", visible: 0, text: "I, I suppose you understand it even more, having to run a huge ship like this with so much responsibility every minute and having to be so careful with all your men looking up to you.", background: "back/quarters6.jpg" },
+    { speaker: "Kirk", image: "MW-365.webp", visible: 0, text: "Well, it probably appears more difficult than it is.", background: "back/quarters7.jpg" },
+    { speaker: "Eve", image: "MW-375.webp", visible: 0, text: "Hmm! I read once that a commander has to act like a paragon of virtue. I never met a paragon.", background: "back/quarters6.jpg" },
+    { speaker: "Kirk", image: "MW-378.webp", visible: 0, text: "Neither have I.", background: "back/quarters7.jpg" },
+    { speaker: "Eve", image: "MW-378.webp", visible: 0, text: "Well, of course not. No one is. But some people try to pretend. Do you, Captain?", background: "back/quarters6.jpg" },
+    { speaker: "Kirk", image: "MW-378.webp", visible: 0, text: "Miss McHuron, I don't", background: "back/quarters7.jpg" },
+    { speaker: "Eve", image: "MW-386.webp", visible: 0, text: "Oh, no! Oh, I just can't do it. I don't care what Harry Mudd says. I do like you, but I just can't go through with it. I hate this whole thing!", background: "back/quarters6.jpg" },
+
+    { speaker: "Mudd", image: "MW-405.webp", visible: 0, text: "Just three? You're sure?", background: "back/quarters1.jpg" },
+    { speaker: "Ruth", image: "MW-394.webp", visible: 0, text: "Yes. The miners are healthy and fairly young.", background: "back/quarters1.jpg" },
+    { speaker: "Mudd", image: "MW-397.webp", visible: 0, text: "Later, dear, later. Magda, did you get to your communications man?", background: "back/quarters1.jpg" },
+    { speaker: "Magda", image: "MW-395.webp", visible: 0, text: "The head miner is named Ben Childress. The others are Gossett and Benton.", background: "back/quarters1.jpg" },
+    { speaker: "Mudd", image: "MW-396.webp", visible: 0, text: "And they've been there?", background: "back/quarters1.jpg" },
+    { speaker: "Ruth", image: "MW-496.webp", visible: 0, text: "Almost three years now, alone!", background: "back/quarters1.jpg" },
+    { speaker: "Mudd", image: "MW-397.webp", visible: 0, text: "Perfect. Perfect. Three of them and three lovely ladies has Harry Mudd. And lithium crystals, my dear, are worth three hundred times their weight in diamonds, thousands of times their weight in gold.", background: "back/quarters1.jpg" },
+    { speaker: "Ruth", image: "MW-400.webp", visible: 0, text: "But they'll be down there, and we'll be up here, circling a hundred miles above them.", background: "back/quarters1.jpg" },
+    { speaker: "Magda", image: "MW-400.webp", visible: 0, text: "And there's a guard outside your door, Harry. You can't get out of your cabin.", background: "back/quarters1.jpg" },
+    { speaker: "Mudd", image: "MW-227.webp", visible: 0, text: "No, my dears. After one more job for you, it won't be Harry Mudd that's trapped. It will be a gentleman named James T", background: "back/quarters1.jpg" },
+    { speaker: "Eve", image: "MW-402.webp", visible: 0, text: "I don't like you, and I'm not very happy with myself, either." },
+    { speaker: "Mudd", image: "MW-405.webp", visible: 0, text: "Well, I'm not really surprised. I've seen you noticing the Captain.", background: "back/quarters1.jpg" },
+    { speaker: "Eve", image: "MW-404.webp", visible: 0, text: "We're supposed to notice them! Oh, oh Harry, I don't feel very good. I think it must be near the time." },
+  ];
+
+  let currentIndex = 0;
+
+  // Prevent image dragging
+  document.querySelectorAll('.frame img').forEach(img => {
+    img.addEventListener('dragstart', e => e.preventDefault());
+  });
+
+  function showDialog(index) {
+    if (index >= dialogSequence.length) {
+      location.href = 'MW-14.html';
+      return;
+    }
+
+    const d = dialogSequence[index];
+
+    // Update background
+    if (d.background) {
+      backgroundImg.src = d.background;
+    }
+
+    // Fade out character
+    characterImg.style.opacity = '0';
+
+    // Update character image and fade in
+    setTimeout(() => {
+      characterImg.src = d.image;
+      dialogText.innerHTML = `<strong>${d.speaker}</strong><br>${d.text}`;
+      
+      // Only fade in if not the "nothing" image
+      if (!d.image.includes('nothing.webp')) {
+        setTimeout(() => {
+          characterImg.style.opacity = '1';
+        }, 150);
+      }
+    }, 300);
+  }
+
+  nextBtn.addEventListener('click', () => {
+    currentIndex++;
+    showDialog(currentIndex);
+  });
+
+  // Start
+  showDialog(0);
+</script>
+
+</body>
+</html>

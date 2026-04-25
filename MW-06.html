@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>06</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+      color: white;
+      background: #000;
+    }
+
+    /* Main container centers everything */
+    .scene-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* The frame maintains 900:450 aspect ratio and scales to fit screen */
+    .frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 100vw;
+      max-height: calc(100vw * 450 / 900); /* Maintain aspect ratio based on width */
+      overflow: hidden;
+      background: #000;
+    }
+
+    /* Alternative constraint: if height is limiting factor */
+    @media (min-aspect-ratio: 900/450) {
+      .frame {
+        max-width: calc(100vh * 900 / 450);
+        max-height: 100vh;
+      }
+    }
+
+    /* All images fill the frame and scale together */
+    .frame img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
+
+    /* Layer ordering */
+    .background {
+      z-index: 1;
+    }
+    
+    .character {
+      bottom: 200px;
+      z-index: 2;
+      object-fit: contain; /* Keep character proportions */
+    }
+
+    /* New container to group dialog box and button, and center them both */
+    #dialog-and-button-container {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      /* Centers the combined width */
+      transform: translateX(-50%); 
+      display: flex;
+      /* Align to the bottom of the logbox (fixes vertical position) */
+      align-items: flex-end; 
+      max-width: 1800px; /* INCREASED: Very wide limit for large screens */
+      width: 95%; /* Use 95% to ensure spacing on wide screens */
+      z-index: 10;
+    }
+
+    /* Dialog box - will now grow to fill space */
+    #logbox {
+      position: static; 
+      transform: none; 
+      width: auto; 
+      max-width: none; /* NEW: Removed fixed width constraint for maximum expansion */
+      padding: 15px 10px; 
+      border-radius: 15px;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      backdrop-filter: blur(10px);
+      border: 2px solid #666;
+      box-sizing: border-box;
+      z-index: 10;
+      flex-grow: 1; /* This makes it take all space available after button space is used */
+      min-height: 90px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+    }
+
+    .dialog-text {
+      max-width: 100%; 
+      margin: 0 auto;
+      font-size: clamp(14px, 2vw, 18px); 
+      line-height: 1.4em;
+      text-align: center;
+      margin-bottom: 0; 
+      white-space: pre-wrap; 
+      padding: 10px 0; 
+    }
+
+    /* Buttons container - OUTSIDE logbox, aligned right next to it */
+    .buttons-container {
+      margin-top: 0; 
+      text-align: left; 
+      padding-right: 0;
+      margin-left: 10px; /* Space between dialog and button */
+      margin-bottom: 0;
+      flex-shrink: 0; 
+    }
+
+    .image-btn {
+      cursor: pointer;
+      width: clamp(50px, 7vw, 70px); 
+      height: clamp(64px, 9vw, 90px);
+      border: none;
+      background: transparent;
+      padding: 0;
+      /* Adjusted to align button visually with the text box */
+      transform: translateY(-5px); 
+    }
+
+    .image-btn:hover {
+      opacity: 0.8;
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 768px) {
+      #dialog-and-button-container {
+        width: 98%; 
+        align-items: center; 
+      }
+      
+      #logbox {
+        padding: 15px 10px;
+        max-width: 100%; 
+        min-height: 70px; 
+      }
+      
+      .buttons-container {
+        margin-left: 5px;
+      }
+
+      .image-btn {
+        transform: translateY(0); 
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene-container">
+    <div class="frame" id="sceneFrame">
+      <img id="background" class="background" alt="Background" src="back/14.jpg" />
+      <img id="character" class="character" alt="Character" />
+    </div>
+  </div>
+  
+  <div id="dialog-and-button-container">
+    <div id="logbox">
+      <div class="dialog-text" id="dialogText"></div>
+    </div>
+    <div class="buttons-container">
+      <img src="TOS-Badge.webp" alt="Next" class="image-btn" id="nextBtn" />
+    </div>
+  </div>
+
+<script>
+  const backgroundImg = document.getElementById('background');
+  const characterImg = document.getElementById('character');
+  const dialogText = document.getElementById('dialogText');
+  const nextBtn = document.getElementById('nextBtn');
+
+  const dialogSequence = [
+    { speaker: "Mudd", image: "MW-167.webp", visible: 0, text: "Well, how the devil am I supposed to know this is a starship, Captain? Here I am with a cargo of young lovelies. A strange ship comes up alongside. ", background: "back/quarters.jpg"},
+    { speaker: "Mudd", image: "MW-167.webp", visible: 0, text: "Well. naturally I did my best to evade you. And starship Captain or no, you exceeded your authority when you drove me and mine into a shower of asteroids.", background: "back/quarters.jpg"},
+    { speaker: "Kirk", image: "MW-166.webp", visible: 0, text: "Your name, please.", background: "back/quarters5.jpg" },
+    { speaker: "Mudd", image: "MW-167.webp", visible: 0, text: "Walsh. Leo Walsh. You destroyed me ship, Captain.", background: "back/quarters.jpg"},
+    { speaker: "Kirk", image: "MW-166.webp", visible: 0, text: "Mister Walsh, I'm convening a ship's hearing on your actions. Mister Spock will supply you with any legal information you may need for your defense.", background: "back/quarters5.jpg" },
+    { speaker: "Mudd", image: "MW-163.webp", visible: 0, text: "You're a hard-nosed one, Captain.", background: "back/quarters.jpg"},
+    { speaker: "Kirk", image: "MW-166.webp", visible: 0, text: "And you're a liar, Mister Walsh. I think we both understand each other. Security! Escort Mister Walsh to his quarters. Confine him there.", background: "back/quarters5.jpg" },
+    { speaker: " ", image: "MW-174.webp", visible: 0, text: " ", background: "back/09.jpg" },
+    { speaker: "Sulu", image: "MW-176.webp", visible: 0, text: "You're on duty, Johnny-o. Back to reality.", background: "back/20.jpg" },
+    { speaker: "Farrell", image: "MW-177.webp", visible: 0, text: "You can feel their eyes when they look at you, like something grabbing hold of you. Did you notice that?", background: "back/06.jpg" },
+    { speaker: "Sulu", image: "MW-179.webp", visible: 0, text: "I noticed. How I noticed. Come on, Johnny.", background: "back/05.jpg" },
+    { speaker: "Scott", image: "MW-180.webp", visible: 0, text: "We've got trouble, Mister Spock.", background: "back/24.jpg" },
+    { speaker: "Spock", image: "MW-181.webp", visible: 0, text: "I'm well aware of that, Mister Scott.", background: "back/24.jpg" },
+    { speaker: "Scott", image: "MW-182.webp", visible: 0, text: "One lithium crystal left, and that with a hairline split at the base.", background: "back/24.jpg" },
+    { speaker: "Spock", image: "MW-183.webp", visible: 0, text: "Better rig a by-pass circuit.", background: "back/24.jpg" },
+    { speaker: "Scott", image: "MW-182.webp", visible: 0, text: "Can't. We blew the whole converter assembly.", background: "back/24.jpg" },
+    { speaker: "Kirk", image: "MW-180.webp", visible: 0, text: "Kirk here.", background: "back/24.jpg" },
+    { speaker: "Spock", image: "MW-183.webp", visible: 0, text: "Needed on the bridge, Captain.", background: "back/24.jpg" },
+    { speaker: "Women", image: "MW-196.webp", visible: 0, text: "Harry! Where were you?", background: "back/quarters4.jpg" },
+    { speaker: "Mudd", image: "MW-190.webp", visible: 0, text: "Shh! Calm down now, darlings. ", background: "back/quarters4b.jpg" },
+    { speaker: "Mudd", image: "MW-186.webp", visible: 0, text: "Would you mind waiting outside?", background: "back/quarters4.jpg" },
+    { speaker: "Guards", image: "MW-187.webp", visible: 0, text: "Sorry, sir.", background: "back/quarters4b.jpg" },
+    { speaker: "Mudd", image: "MW-190.webp", visible: 0, text: "Well, now, answer every question they put to you. Don't lie. Well, you've no need to, have you, and don't submit to a med.", background: "back/quarters4.jpg" },
+    { speaker: "Mudd", image: "MW-197.webp", visible: 0, text: "That is, being so healthy, they've no need for a medical exam, have they.", background: "back/quarters4b.jpg" },
+    { speaker: "Women", image: "MW-196.webp", visible: 0, text: "What if they ask about", background: "back/quarters4.jpg" },
+    { speaker: "Mudd", image: "MW-197.webp", visible: 0, text: "They won't. Have you no place to go lads?", background: "back/quarters4b.jpg" },
+    { speaker: "Women", image: "MW-196.webp", visible: 0, text: "They'll notice we're different.", background: "back/quarters4.jpg" },
+    { speaker: "Mudd", image: "MW-190.webp", visible: 0, text: "No, no, no, they won't. Just let Leo take all the hard questions. Now don't be panicking, loves. We'll get to", background: "back/quarters4.jpg" },
+    { speaker: "Women", image: "MW-196.webp", visible: 0, text: "Get where? We don't have a ship and we're headed the wrong way, Harry.", background: "back/quarters4.jpg" },
+    { speaker: "Mudd", image: "MW-197.webp", visible: 0, text: "Leo. Leo Walsh is me name, darling. Don't forget that. So lovely. Lovely, aren't they?", background: "back/quarters4b.jpg" },
+    { speaker: "Mudd", image: "MW-190.webp", visible: 0, text: "If they only think lovely thoughts, if they smile, they'll come out right some which way, won't they? My personal guarantee on that.", background: "back/quarters4b.jpg" },
+    { speaker: " ", image: "MW-198.webp", visible: 0, text: " ", background: "back/20.jpg" },
+    { speaker: "Spock", image: "MW-200.webp", visible: 1, text: "The entire ship's power is feeding through one lithium crystal.", background: "back/19.jpg" },
+    { speaker: "Kirk", image: "MW-201.webp", visible: 1, text: "Well, switch to by-pass circuits." },
+    { speaker: "Spock", image: "MW-202.webp", visible: 1, text: "The entire ship's power is feeding through one lithium crystal.", background: "back/19.jpg" },
+    { speaker: "Scott", image: "MW-202.webp", visible: 1, text: "We burned them all out when we super-heated. That jackass Walsh not only wrecked his vessel, but in saving his skin", background: "back/19.jpg" },
+    { speaker: "Kirk", image: "MW-201.webp", visible: 1, text: "If it makes you feel better, Engineer, that's one jackass we're going to see skinned." },
+    { speaker: "Scott", image: "MW-204.webp", visible: 1, text: "But it's frustrating. Almost a million gross tons of vessel depending on a hunk of crystal the size of my fist.", background: "back/19.jpg" },
+    { speaker: "Spock", image: "MW-202.webp", visible: 1, text: "And that crystal won't hold up, not pulling all our power through it.", background: "back/19.jpg" },
+    { speaker: "Kirk", image: "MW-201.webp", visible: 1, text: "Well, Mister Spock?" },
+    { speaker: "Spock", image: "MW-204.webp", visible: 1, text: "There's a lithium mining operation on Rigel 12. High-grade ore, I've heard.", background: "back/19.jpg" },
+    { speaker: "Kirk", image: "MW-201.webp", visible: 1, text: "Location and distance." },
+    { speaker: "Spock", image: "MW-200.webp", visible: 1, text: "Mister Farrell has the course. Less than two day's travel.", background: "back/19.jpg" },
+    { speaker: "Kirk", image: "MW-201.webp", visible: 1, text: "Make for Rigel 12, Mister Spock." },
+    { speaker: "Spock", image: "MW-200.webp", visible: 1, text: "Rigel 12, Mister Farrell. You have the course.", background: "back/19.jpg" },
+  ];
+
+  let currentIndex = 0;
+
+  // Prevent image dragging
+  document.querySelectorAll('.frame img').forEach(img => {
+    img.addEventListener('dragstart', e => e.preventDefault());
+  });
+
+  function showDialog(index) {
+    if (index >= dialogSequence.length) {
+      location.href = 'log10.html';
+      return;
+    }
+
+    const d = dialogSequence[index];
+
+    // Update background
+    if (d.background) {
+      backgroundImg.src = d.background;
+    }
+
+    // Fade out character
+    characterImg.style.opacity = '0';
+
+    // Update character image and fade in
+    setTimeout(() => {
+      characterImg.src = d.image;
+      dialogText.innerHTML = `<strong>${d.speaker}</strong><br>${d.text}`;
+      
+      // Only fade in if not the "nothing" image
+      if (!d.image.includes('nothing.webp')) {
+        setTimeout(() => {
+          characterImg.style.opacity = '1';
+        }, 150);
+      }
+    }, 300);
+  }
+
+  nextBtn.addEventListener('click', () => {
+    currentIndex++;
+    showDialog(currentIndex);
+  });
+
+  // Start
+  showDialog(0);
+</script>
+
+</body>
+</html>

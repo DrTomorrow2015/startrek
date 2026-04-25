@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kirk's Pad</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      overflow: hidden;
+    }
+
+#game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background-image: url('back/quarters24.jpg');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    justify-content: flex-start; /* aligns items to the left horizontally */
+    align-items: flex-start;     /* aligns items to the top vertically */
+}
+
+    .plate {
+      width: 700px;
+      height: 700px;
+      position: relative;
+      background-image: url('back/pad1.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      /* Add max dimensions to maintain aspect ratio */
+      max-width: 90vw;
+      max-height: 90vh;
+      aspect-ratio: 1;
+    }
+
+    .food-image {
+      position: absolute;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      cursor: pointer;
+    }
+
+    #food-image-1 {
+      top: 25%; 
+      left: 21%; 
+      width: 60%; 
+      height: 60%; 
+    }
+
+    #fork {
+      position: absolute;
+      top: 180px;
+      left: 650px;
+      transform: translateX(-50%);
+      width: 130px;
+      height: 300px;
+      background-image: url('back/pad-pen.png');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .fork-cursor {
+      cursor: url('back/pad-pen-2.png'), auto !important;
+    }
+
+    .fork-cursor * {
+      cursor: url('back/pad-pen-2.png'), auto !important;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div class="plate">
+      <div class="food-image" id="food-image-1"></div>
+    </div>
+    <div id="fork"></div>
+  </div>
+
+  <script>
+    let gameState = {
+      forkClicked: false,
+      food1Stage: 0,
+      foodImages1: ['back/pad2-z1.png','back/pad2-z2.png','back/pad2-z3.png','back/pad2-z4.png','back/pad2-z5.png','back/pad2-z6.png','back/pad2-z7.png','back/pad2-z8.png'],
+    };
+
+    const forkElement = document.getElementById('fork');
+    const food1Element = document.getElementById('food-image-1');
+    const gameContainer = document.getElementById('game-container');
+
+    // Initialize food images
+    food1Element.style.backgroundImage = `url('${gameState.foodImages1[0]}')`;
+
+    // Fork click handler
+    forkElement.addEventListener('click', function() {
+      if (!gameState.forkClicked) {
+        gameState.forkClicked = true;
+        forkElement.classList.add('hidden');
+        gameContainer.classList.add('fork-cursor');
+      }
+    });
+
+    // Food click handlers
+    food1Element.addEventListener('click', function() {
+      if (gameState.forkClicked && gameState.food1Stage < gameState.foodImages1.length - 1) {
+        gameState.food1Stage++;
+        food1Element.style.backgroundImage = `url('${gameState.foodImages1[gameState.food1Stage]}')`;
+        checkGameComplete();
+      }
+    });
+
+    // Check if both foods are finished
+    function checkGameComplete() {
+      const food1Done = gameState.food1Stage === gameState.foodImages1.length - 1;
+
+      if (food1Done) {
+        setTimeout(() => {
+          window.location.href = 'MW-04.html'; // change if your next file has a different name
+        }, 3000);
+      }
+    }
+
+    // Prevent context menu on right click
+    document.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>alert</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+      color: white;
+    }
+
+    #background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: black url('back/screen6.jpg');
+      background-color: black;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: -1;
+      transition: background-image 0.01s ease;
+    }
+
+    #character1 {
+      position: absolute;
+      bottom: 130px;
+      left: 44%;
+      width: 19%;
+      height: 55%;
+      z-index: 1;
+      transition: opacity 0.03s ease;
+    }
+
+    #logbox {
+      position: absolute;
+      bottom: 0;
+      width: calc(100% - 40px);
+      margin: 20px;
+      padding: 30px 10px;
+      border-radius: 15px;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      backdrop-filter: blur(10px);
+      border: 2px solid #666;
+      max-height: 120px;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+
+    .dialog-text {
+      font-size: 18px;
+      line-height: 1.4em;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .buttons-container {
+      margin-top: -70px;
+      text-align: right;
+    }
+
+    .image-btn {
+      cursor: pointer;
+      width: 70px;
+      height: 90px;
+      border: none;
+      background: transparent;
+      padding: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .image-btn:hover {
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div id="background"></div>
+  <img id="character1" alt="Character1" />
+  <img id="character2" alt="Character2" />
+
+  <div id="logbox">
+    <div class="dialog-text" id="dialogText"> 
+    </div>
+    <div class="buttons-container">
+      <img src="TOS-Badge.webp" alt="Next" class="image-btn" id="nextBtn" />
+    </div>
+  </div>
+
+<script>
+  const characters = [
+    document.getElementById('character1'),
+    document.getElementById('character2')
+
+  ];
+
+  const dialogSequence = [
+    { speaker: " ", image: "back/alert.gif", visible: 0, text: " ", background: "back/01.jpg" },
+  ];
+
+  let currentIndex = 0;
+  const dialogText = document.getElementById('dialogText');
+  const nextBtn = document.getElementById('nextBtn');
+
+  // Hide all characters initially
+  characters.forEach(c => c.style.opacity = '0');
+
+  function showDialog(index) {
+    if (index >= dialogSequence.length) {
+      location.href = 'MW-01b.html';
+      return;
+    }
+
+    const d = dialogSequence[index];
+
+    // Update background
+    if (d.background) {
+      document.getElementById('background').style.backgroundImage = `url('${d.background}')`;
+    }
+
+    // Hide all characters
+    characters.forEach(c => c.style.opacity = '0');
+
+    // Set image for the active one
+    const activeChar = characters[d.visible];
+    activeChar.src = d.image;
+
+    // Show dialog and fade in active
+    dialogText.innerHTML = `<strong>${d.speaker}</strong><br>${d.text}`;
+    setTimeout(() => activeChar.style.opacity = '1', 150);
+  }
+
+  nextBtn.addEventListener('click', () => {
+    currentIndex++;
+    showDialog(currentIndex);
+  });
+
+  // Start
+  showDialog(0);
+</script>
+
+</body>
+</html>

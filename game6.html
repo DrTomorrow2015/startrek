@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>games6</title>
+
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    font-family: sans-serif;
+    color: white;
+  }
+
+  .scene-container {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .frame {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    max-width: 100vw;
+    max-height: calc(100vw * 450 / 900);
+    overflow: hidden;
+    background: #000;
+  }
+
+  @media (min-aspect-ratio: 900/450) {
+    .frame {
+      max-width: calc(100vh * 900 / 450);
+      max-height: 100vh;
+    }
+  }
+
+  .frame img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  .background {
+    z-index: 1;
+  }
+
+  .character {
+    z-index: 2;
+    bottom: 200px;
+    object-fit: contain;
+  }
+
+  /* ----------- CHOICE BOXES ----------- */
+
+  #choice-container {
+    position: fixed;
+    bottom: 33px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 1600px;
+    display: flex;
+    gap: 10px;
+    z-index: 10;
+  }
+
+  .choice-box {
+    flex: 1;
+    background: rgba(0,0,0,0.6);
+    border: 2px solid #666;
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: 0.2s;
+  }
+
+  .choice-box:hover {
+    background: rgba(70,70,70,0.6);
+    transform: scale(1.03);
+  }
+
+  .choice-text {
+    font-size: clamp(14px, 2vw, 18px);
+    line-height: 1.4em;
+    white-space: pre-wrap;
+  }
+</style>
+</head>
+
+<body>
+
+<div class="scene-container">
+  <div class="frame">
+    <img id="background" class="background" src="back/forever-back0.jpg">
+    <img id="character" class="character" src="">
+  </div>
+</div>
+
+<!-- TWO CLICKABLE BOXES -->
+<div id="choice-container">
+
+<div class="choice-box" onclick="window.location.href = 'game7.html'">
+  <div class="choice-text">
+     Tell her a lie
+  </div>
+</div>
+
+<div class="choice-box" onclick="window.location.href = 'game8.html'">
+  <div class="choice-text">
+    Tell her the truth 
+  </div>
+</div>
+
+</div>
+
+<script>
+  // NOTHING complicated: load the background and character normally
+  document.querySelectorAll('.frame img').forEach(img => {
+    img.addEventListener('dragstart', e => e.preventDefault());
+  });
+</script>
+
+</body>
+</html>

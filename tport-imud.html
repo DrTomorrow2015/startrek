@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Star Trek Beam In</title>
+    <style>
+        body {
+  background: url('back/galor1.jpg') no-repeat center center fixed;
+  background-size: cover;
+        }
+
+        .beam-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .beam-gif {
+            position: absolute;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            opacity: 0;
+            animation: fadeInBeam 2s ease-in-out forwards;
+            top: 170px;
+            left: 60px;
+            transform: translate(0px, 0px);
+        }
+
+        .crew-image {
+            position: absolute;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            opacity: 0;
+            animation: showCrew 1s ease-in-out 3s forwards;
+            top: 170px;
+            left: 60px;
+            transform: translate(0px, 0px);
+        }
+
+
+        @keyframes fadeInBeam {
+            0% {
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes showCrew {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes showButton {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes hideBeam {
+            0% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="beam-container">
+        <!-- Replace with your actual beam GIF -->
+        <img src="back/beam-in2.gif" alt="Beaming Effect" class="beam-gif">
+        
+        <!-- Replace with your actual crew PNG -->
+        <img src="back/Scre0.png" alt="Crew" class="crew-image">
+    </div>
+    
+  <script>
+    setTimeout(function() {
+      window.location.href = "IM-05.html"; 
+    }, 3500); // 3500 milliseconds = 3.5 seconds
+  </script>
+        }
+    </script>
+</body>
+</html>

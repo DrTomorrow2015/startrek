@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Star Trek Adventure</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+      color: white;
+      background: #000;
+    }
+
+    .scene-container {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .frame {
+      position: relative;
+      width: 100%; height: 100%;
+      max-width: 100vw;
+      max-height: calc(100vw * 450 / 900);
+      overflow: hidden;
+      background: #000;
+    }
+
+    @media (min-aspect-ratio: 900/450) {
+      .frame {
+        max-width: calc(100vh * 900 / 450);
+        max-height: 100vh;
+      }
+    }
+
+    .frame img {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
+
+    .background { z-index: 1; }
+
+    .character {
+      bottom: 200px;
+      z-index: 2;
+      object-fit: contain;
+    }
+
+    /* ---- DIALOG SCENE ---- */
+    #dialog-and-button-container {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: flex-end;
+      max-width: 1800px;
+      width: 95%;
+      z-index: 10;
+    }
+
+    #logbox {
+      position: static;
+      transform: none;
+      width: auto;
+      max-width: none;
+      padding: 15px 10px;
+      border-radius: 15px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      backdrop-filter: blur(10px);
+      border: 2px solid #666;
+      box-sizing: border-box;
+      z-index: 10;
+      flex-grow: 1;
+      min-height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dialog-text {
+      max-width: 100%;
+      margin: 0 auto;
+      font-size: clamp(14px, 2vw, 18px);
+      line-height: 1.4em;
+      text-align: center;
+      white-space: pre-wrap;
+      padding: 10px 0;
+    }
+
+    .buttons-container {
+      margin-left: 10px;
+      flex-shrink: 0;
+    }
+
+    .image-btn {
+      cursor: pointer;
+      width: clamp(50px, 7vw, 70px);
+      height: clamp(64px, 9vw, 90px);
+      border: none;
+      background: transparent;
+      padding: 0;
+      transform: translateY(-5px);
+    }
+
+    .image-btn:hover { opacity: 0.8; }
+
+    /* ---- CHOICE SCENE ---- */
+    #choice-container {
+      position: fixed;
+      bottom: 33px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 1600px;
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    .choice-box {
+      flex: 1;
+      background: rgba(0,0,0,0.6);
+      border: 2px solid #666;
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: 0.2s;
+    }
+
+    .choice-box:hover {
+      background: rgba(70,70,70,0.6);
+      transform: scale(1.03);
+    }
+
+    .choice-text {
+      font-size: clamp(14px, 2vw, 18px);
+      line-height: 1.4em;
+      white-space: pre-wrap;
+    }
+
+    /* hidden by default */
+    #dialog-and-button-container,
+    #choice-container { display: none; }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      #dialog-and-button-container { width: 98%; align-items: center; }
+      #logbox { padding: 15px 10px; min-height: 70px; }
+      .buttons-container { margin-left: 5px; }
+      .image-btn { transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="scene-container">
+  <div class="frame" id="sceneFrame">
+    <img id="background" class="background" alt="Background" src="back/14.jpg" />
+    <img id="character" class="character" alt="Character" />
+  </div>
+</div>
+
+<!-- Dialog UI -->
+<div id="dialog-and-button-container">
+  <div id="logbox">
+    <div class="dialog-text" id="dialogText"></div>
+  </div>
+  <div class="buttons-container">
+    <img src="TOS-Badge.webp" alt="Next" class="image-btn" id="nextBtn" />
+  </div>
+</div>
+
+<!-- Choice UI -->
+<div id="choice-container">
+  <div class="choice-box" id="choice1">
+    <div class="choice-text" id="choice1Text"></div>
+  </div>
+  <div class="choice-box" id="choice2">
+    <div class="choice-text" id="choice2Text"></div>
+  </div>
+</div>
+
+<script>
+  // ─────────────────────────────────────────────
+  //  SCENE DEFINITIONS
+  //  type: "dialog" → shows dialog sequence then goes to nextScene
+  //  type: "choice" → shows two choices, each leading to a scene
+  // ─────────────────────────────────────────────
+  const scenes = {
+
+    // ── game4: opening dialog ──
+    "game4": {
+      type: "dialog",
+      background: "back/14.jpg",
+      sequence: [
+        { speaker: " ",      text: " ",                                                                              image: "",                    background: "back/screen-tng.jpg" },
+        { speaker: "Kirk",   text: "Mister Spock, what is that thing?",                                              image: "i-m-130.webp",         background: "back/04.jpg" },
+        { speaker: "Spock",  text: "It appears to be an unknown Federation ship, Captain.",                          image: "i-m-095.webp",         background: "back/10.jpg" },
+        { speaker: "Kirk",   text: "Open hailing frequencies.",                                                      image: "i-m-130.webp",         background: "back/04.jpg" },
+        { speaker: "Kirk",   text: "This is James T Kirk, of the Starship Enterprise.",                              image: "",                    background: "back/screen-tng3.jpg" },
+        { speaker: "Kirk",   text: "To whome am I speaking?",                                                        image: "i-m-130.webp",         background: "back/04.jpg" },
+        { speaker: "Picard", text: "This is Jean Juc Picard, of the Starship Enterprise.",                           image: "",                    background: "back/screen-tng2.jpg" },
+        { speaker: "Picard", text: "Captain, I think one of us is out of place.",                                    image: "picard3.webp",         background: "back/bridge4b.jpg" },
+      ],
+      nextScene: "games5"
+    },
+
+    // ── games5: first choice ──
+    "games5": {
+      type: "choice",
+      background: "back/screen-tng2.jpg",
+      choices: [
+        { text: "Tell Picard whats going on",   scene: "games6" },
+        { text: "Don't tell him. Make something up", scene: "games7" }
+      ]
+    },
+
+    // ── games6: told Picard ──
+    "games6": {
+      type: "dialog",
+      background: "back/14.jpg",
+      sequence: [
+        { speaker: "Kirk",   text: "Captain Picard? Have I got a story to tell you.",                                                                             image: "i-m-189.webp",  background: "back/11.jpg" },
+        { speaker: "Kirk",   text: "Ever hear of Gothos? A rouge planet in a star desert within Quadrant 904, over nine hundred light years from Earth.",        image: "i-m-189.webp",  background: "back/11.jpg" },
+        { speaker: "Picard", text: "Yes, in fact, I have. All attempts to find it have failed though. it was never found.",                                       image: "picard5.webp",  background: "back/bridge4b.jpg" },
+      ],
+      nextScene: "games8"
+    },
+
+    // ── games7: didn't tell Picard ──
+    "games7": {
+      type: "dialog",
+      background: "back/14.jpg",
+      sequence: [
+        { speaker: "Kirk",   text: "Whatever this is..I'm not falling for it. Its a trick.",                                         image: "i-m-229.webp",  background: "back/11.jpg" },
+        { speaker: "Picard", text: "This is all too real, Captain, I assure you that.",                                              image: "picard5.webp",  background: "back/bridge4b.jpg" },
+        { speaker: "Picard", text: "Watever is causing this time annomoly is thretining the fabric of..Q!",                          image: "picard4.webp",  background: "back/bridge4b.jpg" },
+        { speaker: "Kirk",   text: "Sounds like you've had this trouble before...",                                                  image: "i-m-229.webp",  background: "back/11.jpg" },
+      ],
+      nextScene: "games8"
+    },
+
+    // ── games8: second choice ──
+    "games8": {
+      type: "choice",
+      background: "back/screen-tng3.jpg",
+      choices: [
+        { text: "Tell Kirk about Q",  scene: "games10" },
+        { text: "Don't tell him",     scene: "games9" }
+      ]
+    },
+
+    // ── games9: didn't tell Kirk about Q ──
+    "games9": {
+      type: "dialog",
+      background: "back/14.jpg",
+      sequence: [
+        { speaker: "Picard", text: "I'm afraid I can't contaminate the past with information about the future, but I will say I would recommend diplomacy if at all possible.", image: "picard5.webp",  background: "back/bridge4b.jpg" },
+        { speaker: "Kirk",   text: "That's not immensely helpful.. could you elaborate just a bit more?",                                                                        image: "i-m-229.webp",  background: "back/11.jpg" },
+        { speaker: "Picard", text: "A sailor can make headway in any wind, Captain. Use the wind do not battle it.",                                                             image: "picard5.webp",  background: "back/bridge4b.jpg" },
+      ],
+      nextScene: "games11"
+    },
+
+    // ── games10: told Kirk about Q ──
+    "games10": {
+      type: "dialog",
+      background: "back/14.jpg",
+      sequence: [
+        { speaker: "Picard", text: "The being you encountered in quadrant 904 was of a race called The Q. They are beings of immense power.",  image: "picard5.webp",  background: "back/bridge4b.jpg" },
+        { speaker: "Kirk",   text: "Yes.. I noticed that. Anything I can DO about that, Captain?",                                             image: "i-m-189.webp",  background: "back/11.jpg" },
+        { speaker: "Picard", text: "I'm afraid there's not much we CAN do, under the circumstances, but",                                      image: "picard5.webp",  background: "back/bridge4b.jpg" },
+      ],
+      nextScene: "games11"
+    },
+
+    // ── games11: Scotty appears ──
+    "games11": {
+      type: "dialog",
+      background: "back/14.jpg",
+      sequence: [
+        { speaker: "Kirk",     text: "Captain Picard, I have a crew of over 400 men that want to go home, and you're not helping. If there's ANY advice you can give.", image: "i-m-229.webp",      background: "back/11.jpg" },
+        { speaker: "Picard",   text: "No. But I know someone who can. Mr Data, contact our guest, and request his presence on the bridge.",                             image: "data01.webp",        background: "back/TNG3.jpg" },
+        { speaker: "OldScott", text: "You wanted to see me, Captain?",                                                                                                  image: "relicsscotty1.webp", background: "back/bridge1.jpg" },
+        { speaker: "Kirk",     text: "SCOTTY!!",                                                                                                                         image: "i-m-101.webp",       background: "back/11.jpg" },
+        { speaker: "OldScotty",text: "Well, I'll be.. Admiral Kirk.",                                                                                                    image: "",                  background: "back/screen-tng4.jpg" },
+      ],
+      nextScene: "games12"
+    },
+
+    // ── games12: third choice ──
+    "games12": {
+      type: "choice",
+      background: "back/screen-tng4.jpg",
+      choices: [
+        { text: "Tell Kirk about the future", scene: "games13" },
+        { text: "Don't tell him about it",    scene: "games14" }
+      ]
+    },
+
+    // ── games13: told Kirk about future ──
+    "games13": {
+      type: "dialog",
+      background: "back/14.jpg",
+      sequence: [
+        { speaker: "OldScotty", text: "Hello Captain! Good to se you alive again, after what happened... But, I'll let you get to that in your own time. You'd be amazed, the troubles we all get in.", image: "relicsscotty2.webp",       background: "back/bridge4b.jpg" },
+        { speaker: "Kirk",      text: "Scotty... What do I do?",                                                                                                                                        image: "i-m-229.webp",       background: "back/11.jpg" },
+        { speaker: "OldScotty", text: "I could never tell you what to do, Captain, no one could. Follow the star you stear by.",                                                                        image: "relicsscotty2.webp",       background: "back/bridge4b.jpg" },
+      ],
+      nextFile: "game5.html"
+    },
+
+    // ── games14: didn't tell Kirk about future ──
+    "games14": {
+      type: "dialog",
+      background: "back/14.jpg",
+      sequence: [
+        { speaker: "OldScotty", text: "Do you mind a little advice from the future, Captain? Starfleet captains are like children. They want everything right now and they want it their way. But the secret is to give them only what they need, not what they want.", image: "relicsscotty2.webp", background: "back/bridge4b.jpg" },
+        { speaker: "Kirk",      text: "I never knew you felt that way, Scotty.",                                                                                                                                                                                          image: "i-m-229.webp",       background: "back/11.jpg" },
+        { speaker: "OldScotty", text: "laddie. You've got to do a bit of Leein' if you want people to think of you as a miracle worker. You just be you, do what you do, and I'm sure it'll be alright.", image: "relicsscotty1.webp", background: "back/bridge4b.jpg" },
+      ],
+      nextFile: "game5.html"
+    }
+  };
+
+  // ─────────────────────────────────────────────
+  //  ENGINE
+  // ─────────────────────────────────────────────
+  const backgroundImg  = document.getElementById('background');
+  const characterImg   = document.getElementById('character');
+  const dialogText     = document.getElementById('dialogText');
+  const nextBtn        = document.getElementById('nextBtn');
+  const dialogUI       = document.getElementById('dialog-and-button-container');
+  const choiceUI       = document.getElementById('choice-container');
+  const choice1        = document.getElementById('choice1');
+  const choice2        = document.getElementById('choice2');
+  const choice1Text    = document.getElementById('choice1Text');
+  const choice2Text    = document.getElementById('choice2Text');
+
+  let currentScene = null;
+  let currentIndex  = 0;
+
+  document.querySelectorAll('.frame img').forEach(img => {
+    img.addEventListener('dragstart', e => e.preventDefault());
+  });
+
+  function goToScene(sceneId) {
+    currentScene = scenes[sceneId];
+    currentIndex  = 0;
+
+    if (!currentScene) {
+      console.error('Scene not found:', sceneId);
+      return;
+    }
+
+    if (currentScene.type === 'dialog') {
+      choiceUI.style.display  = 'none';
+      dialogUI.style.display  = 'flex';
+      showDialogStep(0);
+    } else {
+      dialogUI.style.display  = 'none';
+      choiceUI.style.display  = 'flex';
+      showChoiceScreen();
+    }
+  }
+
+  function showDialogStep(index) {
+    const seq = currentScene.sequence;
+    if (index >= seq.length) {
+      if (currentScene.nextFile) { location.href = currentScene.nextFile; return; }
+      goToScene(currentScene.nextScene);
+      return;
+    }
+    const d = seq[index];
+
+    if (d.background) backgroundImg.src = d.background;
+
+    characterImg.style.opacity = '0';
+    setTimeout(() => {
+      characterImg.src = d.image || '';
+      dialogText.innerHTML = `<strong>${d.speaker}</strong><br>${d.text}`;
+      if (d.image && !d.image.includes('nothing.png')) {
+        setTimeout(() => { characterImg.style.opacity = '1'; }, 150);
+      }
+    }, 300);
+  }
+
+  nextBtn.addEventListener('click', () => {
+    currentIndex++;
+    showDialogStep(currentIndex);
+  });
+
+  function showChoiceScreen() {
+    const bg = currentScene.background;
+    if (bg) backgroundImg.src = bg;
+    characterImg.style.opacity = '0';
+    characterImg.src = '';
+
+    const [c1, c2] = currentScene.choices;
+    choice1Text.textContent = c1.text;
+    choice2Text.textContent = c2.text;
+
+    choice1.onclick = () => goToScene(c1.scene);
+    choice2.onclick = () => goToScene(c2.scene);
+  }
+
+  // ── Start ──
+  goToScene('game4');
+</script>
+
+</body>
+</html>

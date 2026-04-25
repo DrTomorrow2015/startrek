@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Space Fly By</title>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* STARFIELD BACKGROUND */
+    #starfield {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 300%;
+      height: 100%;
+      background: black url('back/background6.jpg') repeat-x;
+      animation: scrollStars 20s linear infinite;
+      z-index: -1;
+    }
+
+    @keyframes scrollStars {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-66.66%); }
+    }
+
+    /* SHIP ANIMATION */
+    #ship {
+      position: absolute;
+      top: 50%;
+      left: -25%;
+      transform: translateY(-50%) scale(0.005); /* tiny start */
+      z-index: 3;
+      animation: flyby 4s ease-out forwards;
+    }
+
+    @keyframes flyby {
+      0% {
+        left: -25%;
+        transform: translateY(-50%) scale(0.005); /* tiny */
+      }
+      60% {
+        transform: translateY(-50%) scale(1.0);  /* grows early */
+      }
+      100% {
+        left: 150%;
+        transform: translateY(-50%) scale(1.5);  /* huge close flyover */
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="starfield"></div>
+
+  <img id="ship" src="ships/ship7.png" alt="Enterprise">
+
+  <script>
+    // Redirect after the fly-by finishes
+    setTimeout(function () {
+      window.location.href = "xxxx.html";   // <-- your next file
+    }, 2500); // match animation duration (2.5 seconds)
+  </script>
+
+</body>
+</html>

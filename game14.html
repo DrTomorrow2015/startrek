@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Star Trek Adventure</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+      color: white;
+      background: #000;
+    }
+
+    .scene-container {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .frame {
+      position: relative;
+      width: 100%; height: 100%;
+      max-width: 100vw;
+      max-height: calc(100vw * 450 / 900);
+      overflow: hidden;
+      background: #000;
+    }
+
+    @media (min-aspect-ratio: 900/450) {
+      .frame {
+        max-width: calc(100vh * 900 / 450);
+        max-height: 100vh;
+      }
+    }
+
+    .frame img {
+      position: absolute;
+      inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
+
+    .background { z-index: 1; }
+
+    .character {
+      bottom: 200px;
+      z-index: 2;
+      object-fit: contain;
+    }
+
+    /* ---- DIALOG SCENE ---- */
+    #dialog-and-button-container {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: flex-end;
+      max-width: 1800px;
+      width: 95%;
+      z-index: 10;
+    }
+
+    #logbox {
+      position: static;
+      transform: none;
+      width: auto;
+      max-width: none;
+      padding: 15px 10px;
+      border-radius: 15px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      backdrop-filter: blur(10px);
+      border: 2px solid #666;
+      box-sizing: border-box;
+      z-index: 10;
+      flex-grow: 1;
+      min-height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dialog-text {
+      max-width: 100%;
+      margin: 0 auto;
+      font-size: clamp(14px, 2vw, 18px);
+      line-height: 1.4em;
+      text-align: center;
+      white-space: pre-wrap;
+      padding: 10px 0;
+    }
+
+    .buttons-container {
+      margin-left: 10px;
+      flex-shrink: 0;
+    }
+
+    .image-btn {
+      cursor: pointer;
+      width: clamp(50px, 7vw, 70px);
+      height: clamp(64px, 9vw, 90px);
+      border: none;
+      background: transparent;
+      padding: 0;
+      transform: translateY(-5px);
+    }
+
+    .image-btn:hover { opacity: 0.8; }
+
+    /* ---- CHOICE SCENE ---- */
+    #choice-container {
+      position: fixed;
+      bottom: 33px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 1600px;
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    .choice-box {
+      flex: 1;
+      background: rgba(0,0,0,0.6);
+      border: 2px solid #666;
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: 0.2s;
+    }
+
+    .choice-box:hover {
+      background: rgba(70,70,70,0.6);
+      transform: scale(1.03);
+    }
+
+    .choice-text {
+      font-size: clamp(14px, 2vw, 18px);
+      line-height: 1.4em;
+      white-space: pre-wrap;
+    }
+
+    /* ---- VISIBILITY ---- */
+    .hidden { display: none !important; }
+
+    @media (max-width: 768px) {
+      #dialog-and-button-container {
+        width: 98%;
+        align-items: center;
+      }
+      #logbox {
+        padding: 15px 10px;
+        min-height: 70px;
+      }
+      .buttons-container { margin-left: 5px; }
+      .image-btn { transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SCENE -->
+  <div class="scene-container">
+    <div class="frame" id="sceneFrame">
+      <img id="background" class="background" alt="Background" src="back/14.jpg" />
+      <img id="character" class="character" alt="Character" />
+    </div>
+  </div>
+
+  <!-- DIALOG UI -->
+  <div id="dialog-and-button-container">
+    <div id="logbox">
+      <div class="dialog-text" id="dialogText"></div>
+    </div>
+    <div class="buttons-container">
+      <img src="TOS-Badge.webp" alt="Next" class="image-btn" id="nextBtn" />
+    </div>
+  </div>
+
+  <!-- CHOICE UI -->
+  <div id="choice-container" class="hidden">
+    <div class="choice-box" id="choiceA">
+      <div class="choice-text">say something to talk him out of it</div>
+    </div>
+    <div class="choice-box" id="choiceB">
+      <div class="choice-text">Don't try and talk him out of it</div>
+    </div>
+  </div>
+
+<script>
+  // ─── Element refs ───────────────────────────────────────────────────────────
+  const backgroundImg  = document.getElementById('background');
+  const characterImg   = document.getElementById('character');
+  const dialogText     = document.getElementById('dialogText');
+  const nextBtn        = document.getElementById('nextBtn');
+  const dialogUI       = document.getElementById('dialog-and-button-container');
+  const choiceUI       = document.getElementById('choice-container');
+  const choiceA        = document.getElementById('choiceA');
+  const choiceB        = document.getElementById('choiceB');
+
+  // ─── Dialog sequences ───────────────────────────────────────────────────────
+
+  const seq14 = [
+    { speaker: "Spock",  text: "The doomsday device is an automated weapon of immense size and power, Captain. It cannot be reasoned with. It simply means to destroy us. If we remain here...", image: "i-m-298.webp",  background: "back/03.jpg" },
+    { speaker: "Kirk",   text: "Yes, Mister Spock, I remember. But there is a man in that other ship. A man that we can save. We can make it right this time.", image: "i-m-039.webp",  background: "back/05.jpg" },
+    { speaker: "Spock",  text: "Jim, should we attempt to change the past? What was must be and remain. Attempting to alter the past is not advisable.", image: "i-m-298.webp",  background: "back/03.jpg" },
+    { speaker: "Kirk",   text: "SCOTTY! How's that transporter coming along? Any chance.", image: "i-m-039.webp",  background: "back/05.jpg" },
+    { speaker: "Scott",  text: "Ahhh..Its no use! Too much interference to lock onto anything. Best I can manage is a power transfer. It'll keep 'em afloat till we can do more.", image: "tubescott.webp", background: "back/tube.jpg" },
+    { speaker: "Kirk",   text: "There must be something we can do. There's always another option, Mister Spock.", image: "i-m-066.webp",  background: "back/05.jpg" },
+    { speaker: "Spock",  text: "The Commodore tried to destroy it once before. The result was a wrecked ship and a dead crew.", image: "i-m-298.webp",  background: "back/03.jpg" },
+    { speaker: "Decker", text: "There is no way to blast through the hull of that machine, so I'm going to take this ship right down its throat. I've been prepared for death ever since it killed my crew.", image: "decker8.webp",  background: "back/09b.jpg" },
+    { speaker: "Kirk",   text: "...Matt...", image: "i-m-066.webp",  background: "back/05.jpg" },
+  ];
+
+  const seq16 = [
+    { speaker: "Decker", text: "I'm not leaving my ship!", image: "decker8.webp", background: "back/09b.jpg" },
+    { speaker: "Kirk",   text: "There's no ship to leave. It's a dead hulk! We'll take her in tow. I'll stay onboard and get her ready. We'll get you back to the Enterprise.", image: "i-m-066.webp", background: "back/05.jpg" },
+    { speaker: "Decker", text: "Thanks to Mister Scotts power relay, I have impulse control, and a full supply of antimatter. I'm going to hand deliver that thing right back to hell.", image: "decker8.webp", background: "back/09b.jpg" },
+  ];
+
+  const seq17 = [
+    { speaker: "Decker", text: "That thing is on the way to the heart of our galaxy. What are you going to do about it?", image: "decker8.webp", background: "back/09b.jpg" },
+    { speaker: "Kirk",   text: "I'll stop it. We will, together.", image: "i-m-066.webp", background: "back/05.jpg" },
+    { speaker: "Decker", text: "Oh, no, I stay here. I'm not leaving my ship! The commander is responsible for the lives of his crew, and for their deaths. Its time to put an end to this.", image: "decker8.webp", background: "back/09b.jpg" },
+  ];
+
+  const seq18 = [
+    { speaker: "Decker", text: "I stay here. I'm not leaving my ship! The commander is responsible for the lives of his crew, and for their deaths. Its time to put an end to this.", image: "deckerc.webp",    background: "back/decker3.jpg" },
+    { speaker: "Spock",  text: "It came up on us fast, Captain, but we seem able to maintain our distance. The Constellation isn't so fortunate, as its at impulse only.", image: "MW-418.webp",    background: "back/02.jpg" },
+    { speaker: " ",      text: " ", image: "ships/doomsday1.png", background: "back/background6.jpg" },
+    { speaker: "Spock",  text: "Commodore Decker's planet killer. And it is pursuing his ship. We are more maneuverable, but it is gaining on The Constellation.", image: "MW-418.webp",    background: "back/02.jpg" },
+    { speaker: "Spock",  text: "The energy leaking from the damaged nacelles on The Constellation seems to be attracting it.", image: "MW-418.webp",    background: "back/02.jpg" },
+    { speaker: "Decker", text: " ", image: "decker3.webp",    background: "back/decker3.jpg" },
+    { speaker: " ",      text: " ", image: "back/nothing.png", background: "back/dscreen4.webp" },
+    { speaker: "Decker", text: " ", image: "decker4.webp",    background: "back/decker0.jpg" },
+    { speaker: " ",      text: " ", image: "back/nothing.png", background: "back/dscreen5.jpg" },
+    { speaker: " ",      text: " ", image: "ships/doomsday3.png", background: "back/background6.jpg" },
+    { speaker: " ",      text: " ", image: "ships/doomsday.png",  background: "back/background6.jpg" },
+    { speaker: "Spock",  text: "The planet killer is dead, Jim. The Commodore sacrificed his life to destroy it.", image: "MW-418.webp",    background: "back/02.jpg" },
+    { speaker: "Kirk",   text: "Matt.", image: "i-m-066.webp",    background: "back/05.jpg" },
+    { speaker: "Tralane", text: "Welcome back to my island of peace. My stormy little planet of Gothos.", image: "trelane11.webp",  background: "back/gothos3.jpg" },
+    { speaker: "Tralane", text: "You must excuse my whimsical way of fetching you here, but I simply could not resist. I can't tell you how delighted I am to again have visitors from the very planet that I've made my hobby.", image: "trelane12.webp",  background: "back/gothos3.jpg" },
+    { speaker: "Spock",   text: "How can you both study something, and actively try and destroy it? that is highly illogical.", image: "spock1.webp",    background: "back/gothos4.jpg" },
+    { speaker: "Tralane", text: "Oh, really? Have I made an error in time? How fallible of me.", image: "trelane5.webp",   background: "back/gothos3.jpg" },
+    { speaker: "Kirk",    text: "You still haven't said what you DO want.", image: "i-m-229.webp",   background: "back/gothos4.jpg" },
+    { speaker: "Tralane", text: "I want to learn all about your feelings on war and killing and conquest. Why you're one of the few predator species that preys even on itself.", image: "trelane.webp",    background: "back/gothos3.jpg" },
+    { speaker: "Tralane", text: "Un vrai Francais? Ah, monsieur. Vive la gloire. This is an array of your battle flags and pennants dating back to the Crusades, to Hannibal's invaders.", image: "trelane15.webp",  background: "back/gothos3.jpg" },
+    { speaker: "Tralane", text: "The thousands of men marching off to their deaths, singing beneath these banners.", image: "trelane16.webp",  background: "back/gothos3.jpg" },
+    { speaker: "Spock",   text: "So you wish to punish humanity for its flaws?", image: "spock1.webp",    background: "back/gothos4.jpg" },
+    { speaker: "Tralane", text: "No, Mister Spock, I don't deplore your martial virtue of deception and stratagem. I adore them. They amuse me.", image: "trelane17.webp",  background: "back/gothos3.jpg" },
+    { speaker: "Kirk",    text: "This has gone on far enough Tralane! End this now. You want me, that's what this is all about. You vs me, in a fight. That's all its ever been about.", image: "i-m-039.webp",   background: "back/gothos4.jpg" },
+    { speaker: "Tralane", text: "A duel like last time? But you ran away and made me chase you. This time we play by different rules.", image: "trelaneph.webp",  background: "back/gothos3.jpg" },
+    { speaker: "Kirk",    text: "YES! Take it all out on me, I DARE you but let my ship GO!", image: "i-m-087.webp",   background: "back/gothos4.jpg" },
+    { speaker: "Tralane", text: "Captain Kirk, you have been found guilty, and the punishment is...", image: "trelane14.webp",  background: "back/gothos5.jpg" },
+    { speaker: "VOICE",   text: "TRALANE! Isn't it past your bed time?", image: "back/nothing.png", background: "back/gothos5.jpg" },
+    { speaker: "Tralane", text: "NO! Its NOT time yet! I WON'T go back yet! You can't make me!!", image: "trelane24.webp",  background: "back/gothos5.jpg" },
+    { speaker: "VOICE",   text: "Is that any way to speak to your elders? Don't make me call on your parents.", image: "back/nothing.png", background: "back/gothos5.jpg" },
+    { speaker: "Tralane", text: "NO! No, no, no, NO! I want to play Star Trek some more! They said if I was good...", image: "trelane24.webp",  background: "back/gothos5.jpg" },
+    { speaker: "Q",       text: "You weren't. Interfering with time unsupervised is a no-no. Rule 1,536 remember?", image: "Q.webp",         background: "back/gothos5.jpg" },
+    { speaker: "Tralane", text: "RULES!!! I HATE YOUR RULES!!!", image: "trelane24.webp",  background: "back/gothos5.jpg" },
+    { speaker: "Q",       text: "Time to go home now, T. Pack your things. I've cleaned up the mess you made in time, its all as it was.", image: "Q.webp",         background: "back/gothos5.jpg" },
+    { speaker: "Tralane", text: "I never get to have anything. You're mean. I hate you.", image: "trelane23.webp",  background: "back/gothos5.jpg" },
+  { speaker: "Spock", image: "MW-733.webp", visible: 0, text: "That was a most distracting deversion.", background: "back/02b.jpg" },
+  { speaker: "McCoy", image: "MW-732.webp", visible: 0, text: "Always the philosophical one, eah Spock? You cry no tears.", background: "back/21.jpg" },
+  { speaker: "Spock", image: "MW-733.webp", visible: 0, text: "The fact that my logical arguments differs from yours, Doctor, pleases me no end.", background: "back/02b.jpg" },
+  { speaker: "Farrell", image: "MW-737.webp", visible: 0, text: "Course plotted and all systems in operation.", background: "back/12.jpg" },
+  { speaker: "Sulu", image: "MW-738.webp", visible: 0, text: "Engines engaged. Helm answering." },
+  { speaker: "Farrell", image: "MW-737.webp", visible: 0, text: "Out of orbit, sir." },
+  { speaker: "Kirk", image: "MW-728.webp", visible: 0, text: "Ahead full.", background: "back/21.jpg" },
+  { speaker: "Sulu", image: "MW-738.webp", visible: 0, text: "Ahead full, sir.", background: "back/12.jpg" }
+  ];
+
+  // ─── State ──────────────────────────────────────────────────────────────────
+  // Scenes: 'dialog14', 'choice15', 'dialog16', 'dialog17', 'dialog18'
+  let currentScene    = 'dialog14';
+  let currentSequence = seq14;
+  let currentIndex    = 0;
+
+  // ─── Helpers ────────────────────────────────────────────────────────────────
+  document.querySelectorAll('.frame img').forEach(img => {
+    img.addEventListener('dragstart', e => e.preventDefault());
+  });
+
+  function showDialogUI(show) {
+    dialogUI.classList.toggle('hidden', !show);
+    choiceUI.classList.toggle('hidden', show);
+  }
+
+  function showDialog(index) {
+    const d = currentSequence[index];
+
+    if (d.background) backgroundImg.src = d.background;
+    characterImg.style.opacity = '0';
+
+    setTimeout(() => {
+      characterImg.src = d.image;
+      dialogText.innerHTML = `<strong>${d.speaker}</strong><br>${d.text}`;
+      if (!d.image.includes('nothing.png')) {
+        setTimeout(() => { characterImg.style.opacity = '1'; }, 150);
+      }
+    }, 300);
+  }
+
+  function advanceDialog() {
+    currentIndex++;
+
+    if (currentIndex >= currentSequence.length) {
+      // Scene transition
+      if (currentScene === 'dialog14') {
+        // Go to choice screen
+        currentScene = 'choice15';
+        backgroundImg.src = 'back/dscreen2.webp';
+        characterImg.src  = '';
+        characterImg.style.opacity = '0';
+        showDialogUI(false);
+        return;
+      }
+      if (currentScene === 'dialog16' || currentScene === 'dialog17') {
+        // Both branches go to game18
+        currentScene    = 'dialog18';
+        currentSequence = seq18;
+        currentIndex    = 0;
+        showDialogUI(true);
+        showDialog(0);
+        return;
+      }
+      if (currentScene === 'dialog18') {
+        location.href = 'main-hub.html';
+        return;
+      }
+    }
+
+    showDialog(currentIndex);
+  }
+
+  // ─── Events ─────────────────────────────────────────────────────────────────
+  nextBtn.addEventListener('click', advanceDialog);
+
+  choiceA.addEventListener('click', () => {
+    currentScene    = 'dialog16';
+    currentSequence = seq16;
+    currentIndex    = 0;
+    showDialogUI(true);
+    showDialog(0);
+  });
+
+  choiceB.addEventListener('click', () => {
+    currentScene    = 'dialog17';
+    currentSequence = seq17;
+    currentIndex    = 0;
+    showDialogUI(true);
+    showDialog(0);
+  });
+
+  // ─── Boot ───────────────────────────────────────────────────────────────────
+  showDialogUI(true);
+  showDialog(0);
+</script>
+</body>
+</html>

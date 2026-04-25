@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>07</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+      color: white;
+      background: #000;
+    }
+
+    /* Main container for the locked image frame */
+    .scene-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* The frame that maintains aspect ratio */
+    .frame {
+      aspect-ratio: 900 / 450;
+      width: 100vw;
+      height: 100vh;
+      max-width: 100%;
+      position: relative;
+      overflow: hidden;
+      background: #000;
+    }
+
+    /* Background image fills the frame */
+    .background {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Character/GIF overlay - scalable like compwav */
+    .character {
+      position: absolute;
+      top: 58%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 400px;
+      height: 280px;
+      object-fit: contain;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+      z-index: 2;
+      transition: opacity 0.3s ease;
+    }
+
+    /* Dialog box */
+    #logbox {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 40px);
+      max-width: 1000px;
+      padding: 30px 10px;
+      border-radius: 15px;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      backdrop-filter: blur(10px);
+      border: 2px solid #666;
+      box-sizing: border-box;
+      z-index: 10;
+    }
+
+    .dialog-text {
+      max-width: 900px;
+      font-size: 18px;
+      line-height: 1.4em;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .buttons-container {
+      margin-top: -70px;
+      text-align: right;
+      padding-right: 20px;
+    }
+
+    .image-btn {
+      cursor: pointer;
+      width: 70px;
+      height: 90px;
+      border: none;
+      background: transparent;
+      padding: 0;
+    }
+
+    .image-btn:hover {
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="scene-container">
+    <div class="frame" id="sceneFrame">
+      <img id="background" class="background" alt="Background" src="back/14.jpg" />
+      <img id="character" class="character" alt="Character" />
+    </div>
+  </div>
+
+  <div id="logbox">
+    <div class="dialog-text" id="dialogText"></div>
+    <div class="buttons-container">
+      <img src="TOS-Badge.webp" alt="Next" class="image-btn" id="nextBtn" />
+    </div>
+  </div>
+
+<script>
+  const backgroundImg = document.getElementById('background');
+  const characterImg = document.getElementById('character');
+  const dialogText = document.getElementById('dialogText');
+  const nextBtn = document.getElementById('nextBtn');
+
+  const dialogSequence = [
+    { speaker: "Computer", image: "back/wave2.gif", text: "Incorrect.", background: "back/muddscreen2.jpg", gifWidth: 400, gifHeight: 280, gifTop: "58%" }
+  ];
+
+  let currentIndex = 0;
+
+  // Prevent image dragging
+  document.querySelectorAll('.frame img').forEach(img => {
+    img.addEventListener('dragstart', e => e.preventDefault());
+  });
+
+  function showDialog(index) {
+    if (index >= dialogSequence.length) {
+      location.href = 'MW-08.html';
+      return;
+    }
+
+    const d = dialogSequence[index];
+
+    // Update background
+    if (d.background) {
+      backgroundImg.src = d.background;
+    }
+
+    // Fade out character
+    characterImg.style.opacity = '0';
+
+    // Update character image and fade in
+    setTimeout(() => {
+      characterImg.src = d.image;
+      dialogText.innerHTML = `<strong>${d.speaker}</strong><br>${d.text}`;
+      
+      // Apply custom sizing if specified
+      if (d.gifWidth) {
+        characterImg.style.width = d.gifWidth + 'px';
+      }
+      if (d.gifHeight) {
+        characterImg.style.height = d.gifHeight + 'px';
+      }
+      if (d.gifTop) {
+        characterImg.style.top = d.gifTop;
+      }
+      
+      // Fade in
+      setTimeout(() => {
+        characterImg.style.opacity = '1';
+      }, 150);
+    }, 300);
+  }
+
+  nextBtn.addEventListener('click', () => {
+    currentIndex++;
+    showDialog(currentIndex);
+  });
+
+  // Start
+  showDialog(0);
+</script>
+
+</body>
+</html>

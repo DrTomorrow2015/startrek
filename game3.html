@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Captain's Log Intro</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+      color: white;
+    }
+
+    #starfield {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 200%;
+      background-image: url('back/background6.jpg');
+      background-repeat: repeat-y;
+      animation: scrollBackground 130s linear infinite;
+    }
+
+     @keyframes scrollBackground {
+      from {
+        transform: translateY(-50%);
+      }
+      to {
+        transform: translateY(0);
+      }
+    }
+
+    #ship {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-height: 40%;
+      z-index: 1;
+    }
+
+#logbox {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 20px;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 18px;
+  line-height: 1.4em;
+  border-top: 1px solid #444;
+  z-index: 2; /* Added z-index to bring it to the front */
+}
+
+#logbox img {
+  margin-top: 20px;
+  cursor: pointer;
+  width: 100px; /* adjust as needed */
+}
+#logbox img:hover {
+  opacity: 0.8;
+}
+  </style>
+</head>
+<body>
+  <div id="starfield"></div>
+<img id="ship" src="ships/EnterpriseD2.png" alt="Starship" />
+  background-size: cover;
+
+<div id="logbox">
+  <div style="display: flex; align-items: center; justify-content: space-between;">
+    <div style="flex: 1; text-align: center;">
+      <strong>Captain's log, Stardate 41723.9.</strong><br>  
+The Enterprise has encountered a surprise visitor. The first Enterprise.
+    </div>
+    <a href="game4.html">
+      <img src="TOS-Badge.webp" alt="Continue" style="width: 60px; cursor: pointer; margin-left: 20px;" />
+    </a>
+  </div>
+</div>
+</body>
+</html>

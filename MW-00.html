@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Star Trek: Dynamic Dialog</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Arial', sans-serif;
+      color: white;
+      background-color: black;
+    }
+
+    #starfield {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 200%; /* Double the height to allow for scrolling */
+      background-image: url('back/background6.jpg'); /* This is the scrolling background */
+      background-repeat: repeat-y;
+      animation: scrollBackground 50s linear infinite; /* Animation for scrolling */
+    }
+
+    @keyframes scrollBackground {
+      from {
+        transform: translateY(-50%); /* Start from -50% to show the bottom half of the doubled background */
+      }
+      to {
+        transform: translateY(0); /* Scroll to the top of the doubled background */
+      }
+    }
+
+    #fullscreen-image {
+      position: fixed; /* Use fixed positioning to cover the viewport */
+      top: 0;
+      left: 0;
+      width: 100%; /* Make it fill the width */
+      height: 100%; /* Make it fill the height */
+      object-fit: cover; /* This is key: it will cover the entire area, maintaining aspect ratio and cropping if necessary */
+      z-index: 1; /* Keep it above the starfield */
+    }
+
+#center-image {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* This scale(0.7) will be its initial state BEFORE the animation starts */
+  transform: translate(-50%, -50%) scale(0.7);
+  width: auto;
+  height: auto;
+  max-width: 20%;
+  max-height: 20%;
+  z-index: 2;
+  animation: scaleUp 75s forwards; /* This references the @keyframes scaleUp */
+}
+    @keyframes scaleUp {
+      from {
+        transform: translate(-50%, -50%) scale(1);
+      }
+      to {
+        transform: translate(-50%, -50%) scale(0.3); /* Scales up to 100% of its natural size */
+      }
+    }
+
+    .characters-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      width: 100%;
+      padding: 0 30px;
+      position: absolute;
+      bottom: 120px; /* Adjust this value if needed to position characters above the dialog */
+      z-index: 3; /* Ensure characters are above the fullscreen image and center-image */
+    }
+    .character {
+      max-height: 300px;
+      max-width: 200px;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+    .character.speaking {
+      opacity: 1;
+      transform: scale(1.08);
+      filter: brightness(1.2);
+    }
+
+    .dialog-container {
+      width: calc(100% - 40px);
+      margin: 20px;
+      padding: 15px 10px;
+      border-radius: 15px;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      backdrop-filter: blur(10px);
+      border: 2px solid #666;
+      max-height: 120px;
+      overflow-y: auto;
+      position: absolute; /* Position the dialog box absolutely */
+      bottom: 0; /* Place it at the very bottom */
+      left: 0;
+      right: 0;
+      z-index: 4; /* Ensure dialog is on top of everything */
+    }
+    .speaker-name {
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .dialog-text {
+      font-size: 18px;
+      line-height: 1.6;
+    }
+    .buttons-container {
+      margin-top: -30px;
+      text-align: right;
+    }
+.image-btn {
+  cursor: pointer;
+  width: 70px;
+  height: 90px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  transition: opacity 0.3s ease;
+}
+
+.image-btn:hover {
+  opacity: 0.8;
+}
+  </style>
+</head>
+<body>
+  <div id="starfield"></div>
+  <img id="fullscreen-image" src="back/screen7.png" alt="Starship Bridge" />
+  <img id="center-image" src="ships/muddship3.png" alt="Mudds Ship" /> <div class="characters-container" id="charactersContainer"></div>
+  <div class="dialog-container">
+    <div class="speaker-name" id="speakerName"></div>
+    <div class="dialog-text" id="dialogText"></div>
+    <div class="buttons-container">
+      <img src="TOS-Badge.webp" alt="Next" class="image-btn" id="advanceBtn" />
+    </div>
+  </div>
+
+  <script>
+    const scenes = [
+      {
+        characters: [
+          { id: "char1", name: "Kirk", position: "offscreen" },
+          { id: "char2", name: "Sulu", position: "offscreen" },
+        ],
+        dialog: [
+          { speaker: "Sulu", speakerClass: "Sulu", text: "There he is, sir. Centre screen. Still trying to run away from us, sir.", speakingCharacter: "offscreen" },
+          { speaker: "Kirk", speakerClass: "Kirk", text: "Don't lose him, Mister Sulu.", speakingCharacter: "offscreen" },
+          { speaker: "Sulu", speakerClass: "Sulu", text: "No, sir.", speakingCharacter: "offscreen" },
+        ],
+      }
+    ];
+
+    const charactersContainer = document.getElementById("charactersContainer");
+    const speakerNameEl = document.getElementById("speakerName");
+    const dialogTextEl = document.getElementById("dialogText");
+    const advanceBtn = document.getElementById("advanceBtn");
+    const fullscreenImage = document.getElementById("fullscreen-image");
+    const centerImage = document.getElementById("center-image"); // Get the new image element
+
+    let currentSceneIndex = 0;
+    let currentDialogIndex = 0;
+
+    function loadCharacters(characters) {
+      charactersContainer.innerHTML = "";
+      characters.forEach(char => {
+        const img = document.createElement("img");
+        img.src = char.src;
+        img.alt = char.name;
+        img.className = `character ${char.position}`;
+        img.id = char.id;
+        charactersContainer.appendChild(img);
+      });
+    }
+
+    function updateDialog() {
+      const scene = scenes[currentSceneIndex];
+      const line = scene.dialog[currentDialogIndex];
+
+      if (!line) {
+        currentSceneIndex++;
+        currentDialogIndex = 0;
+        if (currentSceneIndex >= scenes.length) {
+          window.location.href = "MW-01.html"; // Redirect after all dialog is complete
+          return;
+        }
+        loadCharacters(scenes[currentSceneIndex].characters);
+        updateDialog();
+        return;
+      }
+
+      speakerNameEl.textContent = line.speaker;
+      speakerNameEl.className = `speaker-name ${line.speakerClass}`;
+      dialogTextEl.textContent = line.text;
+
+      document.querySelectorAll('.character').forEach(img => {
+        img.classList.remove('speaking');
+      });
+
+      const speakingChar = scene.characters.find(c => c.position === line.speakingCharacter);
+      if (speakingChar) {
+        document.getElementById(speakingChar.id).classList.add('speaking');
+      }
+    }
+
+    advanceBtn.addEventListener("click", () => {
+      currentDialogIndex++;
+      updateDialog();
+    });
+
+    // Start the first scene
+    loadCharacters(scenes[0].characters);
+    updateDialog();
+  </script>
+</body>
+</html>

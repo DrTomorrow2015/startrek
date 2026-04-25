@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>11</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+      color: white;
+      background: #000;
+    }
+
+    /* Main container centers everything */
+    .scene-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* The frame maintains 900:450 aspect ratio and scales to fit screen */
+    .frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 100vw;
+      max-height: calc(100vw * 450 / 900); /* Maintain aspect ratio based on width */
+      overflow: hidden;
+      background: #000;
+    }
+
+    /* Alternative constraint: if height is limiting factor */
+    @media (min-aspect-ratio: 900/450) {
+      .frame {
+        max-width: calc(100vh * 900 / 450);
+        max-height: 100vh;
+      }
+    }
+
+    /* All images fill the frame and scale together */
+    .frame img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
+
+    /* Layer ordering */
+    .background {
+      z-index: 1;
+    }
+    
+    .character {
+      bottom: 200px;
+      z-index: 2;
+      object-fit: contain; /* Keep character proportions */
+    }
+
+    /* New container to group dialog box and button, and center them both */
+    #dialog-and-button-container {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      /* Centers the combined width */
+      transform: translateX(-50%); 
+      display: flex;
+      /* Align to the bottom of the logbox (fixes vertical position) */
+      align-items: flex-end; 
+      max-width: 1800px; /* INCREASED: Very wide limit for large screens */
+      width: 95%; /* Use 95% to ensure spacing on wide screens */
+      z-index: 10;
+    }
+
+    /* Dialog box - will now grow to fill space */
+    #logbox {
+      position: static; 
+      transform: none; 
+      width: auto; 
+      max-width: none; /* NEW: Removed fixed width constraint for maximum expansion */
+      padding: 15px 10px; 
+      border-radius: 15px;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      backdrop-filter: blur(10px);
+      border: 2px solid #666;
+      box-sizing: border-box;
+      z-index: 10;
+      flex-grow: 1; /* This makes it take all space available after button space is used */
+      min-height: 90px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+    }
+
+    .dialog-text {
+      max-width: 100%; 
+      margin: 0 auto;
+      font-size: clamp(14px, 2vw, 18px); 
+      line-height: 1.4em;
+      text-align: center;
+      margin-bottom: 0; 
+      white-space: pre-wrap; 
+      padding: 10px 0; 
+    }
+
+    /* Buttons container - OUTSIDE logbox, aligned right next to it */
+    .buttons-container {
+      margin-top: 0; 
+      text-align: left; 
+      padding-right: 0;
+      margin-left: 10px; /* Space between dialog and button */
+      margin-bottom: 0;
+      flex-shrink: 0; 
+    }
+
+    .image-btn {
+      cursor: pointer;
+      width: clamp(50px, 7vw, 70px); 
+      height: clamp(64px, 9vw, 90px);
+      border: none;
+      background: transparent;
+      padding: 0;
+      /* Adjusted to align button visually with the text box */
+      transform: translateY(-5px); 
+    }
+
+    .image-btn:hover {
+      opacity: 0.8;
+    }
+
+    /* Mobile adjustments */
+    @media (max-width: 768px) {
+      #dialog-and-button-container {
+        width: 98%; 
+        align-items: center; 
+      }
+      
+      #logbox {
+        padding: 15px 10px;
+        max-width: 100%; 
+        min-height: 70px; 
+      }
+      
+      .buttons-container {
+        margin-left: 5px;
+      }
+
+      .image-btn {
+        transform: translateY(0); 
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="scene-container">
+    <div class="frame" id="sceneFrame">
+      <img id="background" class="background" alt="Background" src="back/14.jpg" />
+      <img id="character" class="character" alt="Character" />
+    </div>
+  </div>
+  
+  <div id="dialog-and-button-container">
+    <div id="logbox">
+      <div class="dialog-text" id="dialogText"></div>
+    </div>
+    <div class="buttons-container">
+      <img src="TOS-Badge.webp" alt="Next" class="image-btn" id="nextBtn" />
+    </div>
+  </div>
+
+<script>
+  const backgroundImg = document.getElementById('background');
+  const characterImg = document.getElementById('character');
+  const dialogText = document.getElementById('dialogText');
+  const nextBtn = document.getElementById('nextBtn');
+
+  const dialogSequence = [
+    { speaker: "Scott", image: "i-m-361.webp", visible: 0, text: "Our last crystal, sir. It's gone.", background: "back/briefing10.jpg" },
+    { speaker: "Farrell", image: "MW-075.webp", visible: 0, text: "Captain Kirk, engineering section reports our entire life-support system is now on batteries.", background: "back/23.jpg" },
+    { speaker: "Kirk", image: "MW-304.webp", visible: 0, text: "Mister Spock. Miss McHuron, would you mind.", background: "back/briefing10.jpg" },
+    { speaker: "Kirk", image: "MW-303.webp", visible: 0, text: "Mister Spock, will you contact the miners on Rigel 12? Notify them that we'll need the lithium crystals immediately upon arrival." },
+    { speaker: "Kirk", image: "MW-305.webp", visible: 0, text: "." },
+    { speaker: "Mudd", image: "MW-309.webp", visible: 0, text: "Oh, you beautiful galaxy! Oh, that heavenly universe! Well, girls, lithium miners.", background: "back/briefing11.jpg" },
+    { speaker: "Mudd", image: "MW-312.webp", visible: 0, text: "Don't you understand? Lonely, isolated, overworked, rich lithium miners!", background: "back/briefing11.jpg" },
+
+    { speaker: "Mudd", image: "MW-313.webp", visible: 0, text: "Girls, do you still want husbands, hmm? Evie, you won't be satisfied with a mere ship's captain.", background: "back/briefing7.jpg" },
+    { speaker: "Mudd", image: "MW-315.webp", visible: 0, text: "I'll get you a man who can buy you a whole planet.", background: "back/briefing10.jpg" },
+
+    { speaker: "Mudd", image: "MW-318.webp", visible: 0, text: "Maggie, you're going to be a countess. Ruth, I'll make you a duchess. And I, I'll be running this starship. Captain James Kirk, the next orders you're taking will be given by Harcourt Fenton Mudd!", background: "back/briefing11.jpg" },
+  ];
+
+  let currentIndex = 0;
+
+  // Prevent image dragging
+  document.querySelectorAll('.frame img').forEach(img => {
+    img.addEventListener('dragstart', e => e.preventDefault());
+  });
+
+  function showDialog(index) {
+    if (index >= dialogSequence.length) {
+      location.href = 'log4.html';
+      return;
+    }
+
+    const d = dialogSequence[index];
+
+    // Update background
+    if (d.background) {
+      backgroundImg.src = d.background;
+    }
+
+    // Fade out character
+    characterImg.style.opacity = '0';
+
+    // Update character image and fade in
+    setTimeout(() => {
+      characterImg.src = d.image;
+      dialogText.innerHTML = `<strong>${d.speaker}</strong><br>${d.text}`;
+      
+      // Only fade in if not the "nothing" image
+      if (!d.image.includes('nothing.webp')) {
+        setTimeout(() => {
+          characterImg.style.opacity = '1';
+        }, 150);
+      }
+    }, 300);
+  }
+
+  nextBtn.addEventListener('click', () => {
+    currentIndex++;
+    showDialog(currentIndex);
+  });
+
+  // Start
+  showDialog(0);
+</script>
+
+</body>
+</html>

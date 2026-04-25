@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>02</title>
+  <style>
+body {
+  margin: 0;
+  padding: 0;
+  background: url('back/nothing.png') center/contain no-repeat;
+  background-size: auto;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #444;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.control-panel {
+  position: relative;
+  width: 600px;
+  height: 500px;
+  top: 0px;
+  left: 68px;
+  background: url('back/comp-judge02.png') center/contain no-repeat;
+}
+
+.computer-lights {
+  position: absolute;
+  top: 325px;  
+  left: 380px;
+  width: 85px;
+  height: auto;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.computer-lights2 {
+  position: absolute;
+  top: 105px;  
+  left: 195px;
+  width: 340px;
+  height: auto;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.control-button {
+  position: absolute;
+  width: 33px;
+  height: 33px;
+  background: url('back/comp-jd-sw00.png') center/cover no-repeat;
+  cursor: pointer;
+
+}
+
+.color-red {
+  background-blend-mode: multiply;
+  background-color: rgba(255, 100, 100, 0.7);
+}
+
+.color-blue {
+  background-blend-mode: multiply;
+  background-color: rgba(100, 100, 255, 0.7);
+}
+
+.color-green {
+  background-blend-mode: multiply;
+  background-color: rgba(100, 255, 100, 0.7);
+}
+
+/* Original color buttons positions */
+.button-1 {
+  top: 366px;
+  left: 337px;
+}
+
+.button-2 {
+  top: 366px;
+  left: 387px;
+}
+
+.button-3 {
+  top: 366px;
+  left: 437px;
+}
+
+.secret-button {
+  top: 375px;
+  left: 303px;
+  width: 45px;
+  height: 45px;
+  opacity: 0;
+  pointer-events: none;
+  background: url('back/buttonz-1.png') center/cover no-repeat;
+}
+
+.secret-button.unlocked {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Cycle buttons from computer1 */
+.cycle-button {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+
+.cycle-button.forward {
+  top: 377px;
+  left: 34px;
+  background: url('back/buttonz-2.png') center/contain no-repeat;
+}
+
+.cycle-button.back {
+  top: 377px;
+  left: 94px;
+  background: url('back/buttonz-2.png') center/contain no-repeat;
+}
+
+  </style>
+</head>
+<body>
+  <div class="hub-container">
+    <div class="control-panel">
+      <img src="back/comp-judge.gif" class="computer-lights" alt="light">
+      <img src="back/comp-judge2.gif" class="computer-lights2" alt="light2">
+
+      <!-- Color buttons -->
+      <div class="control-button button-1" id="button1" data-color="0"></div>
+      <div class="control-button button-2" id="button2" data-color="0"></div>
+      <div class="control-button button-3" id="button3" data-color="0"></div>
+
+      <!-- Secret button -->
+      <a href="MW-07.html" class="control-button secret-button" id="secretButton" title="Access Granted"></a>
+
+    </div>
+  </div>
+
+  <script>
+    const colors = ['', 'color-red', 'color-blue', 'color-green'];
+    
+    // Three different valid combinations
+    const secretCombinations = [
+      [2, 1, 3], // Blue, Red, Green
+      [1, 3, 2], // Red, Green, Blue
+      [3, 2, 1]  // Green, Blue, Red
+    ];
+
+    const buttons = [
+      document.getElementById('button1'),
+      document.getElementById('button2'),
+      document.getElementById('button3')
+    ];
+
+    const secretButton = document.getElementById('secretButton');
+
+    buttons.forEach((button, index) => {
+      button.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        let currentColor = parseInt(button.getAttribute('data-color'));
+        currentColor = currentColor === 3 ? 1 : currentColor + 1;
+
+        button.classList.remove('color-red', 'color-blue', 'color-green');
+        if (currentColor > 0) {
+          button.classList.add(colors[currentColor]);
+        }
+
+        button.setAttribute('data-color', currentColor);
+        checkCombination();
+      });
+    });
+
+    function checkCombination() {
+      const currentCombination = buttons.map(button =>
+        parseInt(button.getAttribute('data-color'))
+      );
+
+      // Check if current combination matches any of the valid combinations
+      const isCorrect = secretCombinations.some(validCombo =>
+        currentCombination.every((color, index) => color === validCombo[index])
+      );
+
+      if (isCorrect) {
+        secretButton.classList.add('unlocked');
+      } else {
+        secretButton.classList.remove('unlocked');
+      }
+    }
+
+    secretButton.addEventListener('click', function (e) {
+      if (!secretButton.classList.contains('unlocked')) {
+        e.preventDefault();
+      }
+    });
+  </script>
+</body>
+</html>

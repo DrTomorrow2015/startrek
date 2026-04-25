@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Captain's Log Intro</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+      color: white;
+    }
+
+    #starfield {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 200%;
+      background-image: url('back/background6.jpg');
+      background-repeat: repeat-y;
+      animation: scrollBackground 50s linear infinite;
+    }
+
+     @keyframes scrollBackground {
+      from {
+        transform: translateY(-50%);
+      }
+      to {
+        transform: translateY(0);
+      }
+    }
+
+    #ship {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-height: 40%;
+      z-index: 1;
+    }
+
+#logbox {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 20px;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 18px;
+  line-height: 1.4em;
+  border-top: 1px solid #444;
+  z-index: 2; /* Added z-index to bring it to the front */
+}
+
+    #continue-button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #0ff;
+      color: #000;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #continue-button:hover {
+      background: #0cc;
+    }
+  </style>
+</head>
+<body>
+  <div id="starfield"></div>
+<img id="ship" src="ships/enterprise-2.png" alt="Starship" />
+
+  <div id="logbox">
+    <div>
+      <strong>Captain's log, Stardate 1329.2.</strong><br>   
+On board the U.S.S. Enterprise, a ship's hearing is being convened against the transport vessel's captain. I'm becoming concerned about the almost-hypnotic effect produced by the women.
+    </div>
+    <button id="continue-button" onclick="location.href='MW-07.html'">Continue</button>
+  </div>
+</body>
+</html>

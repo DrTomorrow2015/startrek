@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Space Fly By</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #starfield {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 300%;
+      height: 100%;
+      background: black url('back/background6.jpg') repeat-x;
+      animation: scrollStars 20s linear infinite;
+      z-index: -1;
+    }
+
+    @keyframes scrollStars {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-66.66%); }
+    }
+
+    #ship {
+      position: absolute;
+      top: 40%;
+      left: -20%;
+      transform: translateY(-50%) scale(0.1);
+      max-height: 40%;
+      z-index: 1;
+      animation: moveShip 3s linear forwards;
+    }
+
+    @keyframes moveShip {
+      0% {
+        left: -20%;
+        transform: translateY(-50%) scale(0.1);
+      }
+      100% {
+        left: 155%;
+        transform: translateY(-50%) scale(1);
+      }
+    }
+
+    #ship2 {
+      position: absolute;
+      top: 40%;
+      left: 155%;
+      transform: translateY(-50%) scale(1);
+      max-height: 40%;
+      z-index: 1;
+      opacity: 0;
+      animation: moveShipReverse 1.5s linear forwards;
+      animation-delay: 1.5s;
+    }
+
+    @keyframes moveShipReverse {
+      0% {
+        opacity: 1;
+        left: 155%;
+        transform: translateY(-50%) scale(1);
+      }
+      100% {
+        opacity: 1;
+        left: -20%;
+        transform: translateY(-50%) scale(0.1);
+      }
+    }
+
+    .ship-hidden {
+      opacity: 0;
+    }
+  </style>
+</head>
+<body>
+  <script>
+    // Hide first ship when second animation starts
+    setTimeout(function () {
+      document.getElementById('ship').classList.add('ship-hidden');
+    }, 2000);
+
+    // Optional: Redirect after both animations complete
+    setTimeout(function () {
+    window.location.href = "xxxx.html"; // Uncomment if you want to redirect
+    }, 3000);
+  </script>
+
+  <div id="starfield"></div>
+  <img id="ship" src="ships/enterprise-4.png" alt="Starship" />
+
+</body>
+</html>
